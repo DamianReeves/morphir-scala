@@ -283,17 +283,7 @@ object EvaluationEngine {
   def typed: EvaluationEngine[scala.Unit, UType] = new EvaluationEngine[scala.Unit, UType] {}
 
   type EvalResult = Any
-  type StepCompanion
-
-  type Step[TA, VA, A] = ZStep[Any, TA, VA, A]
-  val Step = ZPure.asInstanceOf[ZPure.type with StepCompanion]
-
-  type ZStep[-R, TA, VA, A] = ZPure[EngineEvent, Context[TA, VA], Context[TA, VA], R, EvaluationError, A]
-  val ZStep = ZPure.asInstanceOf[ZPure.type with StepCompanion]
-
-  implicit class StepCompanionOps(val self: ZPure.type with StepCompanion) extends AnyVal {
-    def foo = ()
-  }
+  
 
   final case class Context[+TA, +VA](parent: Option[Context[TA, VA]], variables: Variables) { self =>
     def scoped(bindings: VarBinding*): Context[TA, VA] = Context(parent = Some(self), variables = variables)
@@ -308,7 +298,7 @@ object EvaluationEngine {
       ): ZPure[EngineEvent, Any, Any, Any, EvaluationError.VariableNotFound, VarValue] =
         (context.parent, context.variables.get(variable)) match {
           case (_, Some(value))  => ZPure.succeed(value)
-          case (Some(parent), _) => loop(parent) ?? LogEvent.Trace("Looking up variable in parent context")
+          case (Some(parent), _) => ZPure.log(LogEvent.Trace("Looking up variable in parent context")) *> loop(parent)
           case _                 => ZPure.fail(EvaluationError.VariableNotFound(variable.name))
         }
       loop(self)

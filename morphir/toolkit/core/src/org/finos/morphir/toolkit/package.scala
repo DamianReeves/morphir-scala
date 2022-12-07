@@ -20,4 +20,18 @@ package object toolkit {
 
   type ZEvaluationContext[TA, VA] = ZState[EvaluationContext[TA, VA]]
   // type TypedValueVisitor[Context] = ValueVisitor[Context, scala.Unit, MorphirType]
+
+  type StepCompanion
+
+  type Step[TA, VA, A] = ZStep[Any, TA, VA, A]
+  val Step = ZPure.asInstanceOf[ZPure.type with StepCompanion]
+
+  type ZStep[-R, TA, VA, A] =
+    ZPure[EngineEvent, EvaluationEngine.Context[TA, VA], EvaluationEngine.Context[TA, VA], R, EvaluationError, A]
+  val ZStep = ZPure.asInstanceOf[ZPure.type with StepCompanion]
+
+  implicit class ZStepCompanionOps(val self: ZPure.type with StepCompanion) extends AnyVal {
+    import EvaluationEngine._
+
+  }
 }
