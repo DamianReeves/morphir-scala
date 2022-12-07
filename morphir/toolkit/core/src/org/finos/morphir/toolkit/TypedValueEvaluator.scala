@@ -86,7 +86,7 @@ class TypedValueEvaluator extends Evaluator[scala.Unit, UType] { self =>
     (params, _, body) = valueDefinition
     evaluatedBody <- body
     variable = (valueName, VariableRef.Evaluated(evaluatedBody, attributes))
-    locals0      <- EvaluationContext.Typed.localVaribles
+    locals0     <- EvaluationContext.Typed.localVaribles
     _           <- Console.printLine(s"[Initial]Variables: $locals0").orDie
     _           <- EvaluationContext.Typed.pushFrame(Variables.Typed(variable))
     res         <- inValue
