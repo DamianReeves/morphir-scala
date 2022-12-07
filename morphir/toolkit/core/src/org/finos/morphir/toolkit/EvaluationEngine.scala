@@ -9,27 +9,33 @@ import org.finos.morphir.ir.Literal.Lit
 import org.finos.morphir.ir.Value.Pattern
 import zio._
 import org.finos.morphir.ir.Literal.Literal._
-import EvaluationContext.{Variables, VariableRef}
+import zio.prelude._
 import zio.prelude.fx._
 import EvaluationEngine._
 
-abstract class EvaluationEngine[TA, VA]
-    extends Folder[scala.Unit, TA, VA, Step[TA,VA]] {
+abstract class EvaluationEngine[TA: Tag, VA: Tag] extends Folder[scala.Unit, TA, VA, Step[TA, VA, EvalResult]] {
   self =>
   import EvaluationEngine._
+  final type Ctx = Context[TA, VA]
 
-  def evaluate(value:Value[TA,VA]):Step[TA,VA] = 
+  def createContext(bindings: VarBinding*): Ctx = Context.createRoot[TA, VA](bindings: _*)
+
+  def evaluate(value: Value[TA, VA]): Step[TA, VA, EvalResult] =
     value.foldContext(())(self)
+
+  def makeContext(bindings: VarBinding*): Reader[Any, Ctx] = Reader.succeed {
+    createContext(bindings: _*)
+  }
 
   def applyCase(
       context: Unit,
       value: Value[TA, VA],
       attributes: VA,
-      function: Step[TA, VA],
-      argument: Step[TA, VA]
-  ): Step[TA, VA] = visitApply(value, attributes, function, argument)
+      function: Step[TA, VA, EvalResult],
+      argument: Step[TA, VA, EvalResult]
+  ): Step[TA, VA, EvalResult] = visitApply(value, attributes, function, argument)
 
-  def constructorCase(context: Unit, value: Value[TA, VA], attributes: VA, name: FQName): Step[TA, VA] =
+  def constructorCase(context: Unit, value: Value[TA, VA], attributes: VA, name: FQName): Step[TA, VA, EvalResult] =
     visitConstructor(value, attributes, name)
 
   def destructureCase(
@@ -37,232 +43,342 @@ abstract class EvaluationEngine[TA, VA]
       value: Value[TA, VA],
       attributes: VA,
       pattern: Pattern[VA],
-      valueToDestruct: Step[TA, VA],
-      inValue: Step[TA, VA]
-  ): Step[TA, VA] = visitDestructure(value, attributes, pattern, valueToDestruct, inValue)
+      valueToDestruct: Step[TA, VA, EvalResult],
+      inValue: Step[TA, VA, EvalResult]
+  ): Step[TA, VA, EvalResult] = visitDestructure(value, attributes, pattern, valueToDestruct, inValue)
 
   def fieldCase(
       context: Unit,
       value: Value[TA, VA],
       attributes: VA,
-      subjectValue: Step[TA, VA],
+      subjectValue: Step[TA, VA, EvalResult],
       fieldName: Name
-  ): Step[TA, VA] = visitField(value, attributes, subjectValue, fieldName)
+  ): Step[TA, VA, EvalResult] = visitField(value, attributes, subjectValue, fieldName)
 
-  def fieldFunctionCase(context: Unit, value: Value[TA, VA], attributes: VA, fieldName: Name): Step[TA, VA] =
+  def fieldFunctionCase(
+      context: Unit,
+      value: Value[TA, VA],
+      attributes: VA,
+      fieldName: Name
+  ): Step[TA, VA, EvalResult] =
     visitFieldFunction(value, attributes, fieldName)
 
   def ifThenElseCase(
       context: Unit,
       value: Value[TA, VA],
       attributes: VA,
-      condition: Step[TA, VA],
-      thenBranch: Step[TA, VA],
-      elseBranch: Step[TA, VA]
-  ): Step[TA, VA] = visitIfThenElse(value, attributes, condition, thenBranch, elseBranch)
+      condition: Step[TA, VA, EvalResult],
+      thenBranch: Step[TA, VA, EvalResult],
+      elseBranch: Step[TA, VA, EvalResult]
+  ): Step[TA, VA, EvalResult] = visitIfThenElse(value, attributes, condition, thenBranch, elseBranch)
 
   def lambdaCase(
       context: Unit,
       value: Value[TA, VA],
       attributes: VA,
       argumentPattern: Pattern[VA],
-      body: Step[TA, VA]
-  ): Step[TA, VA] = visitLambda(value, attributes, argumentPattern, body)
+      body: Step[TA, VA, EvalResult]
+  ): Step[TA, VA, EvalResult] = visitLambda(value, attributes, argumentPattern, body)
 
   def letDefinitionCase(
       context: Unit,
       value: Value[TA, VA],
       attributes: VA,
       valueName: Name,
-      valueDefinition: (Chunk[(Name, VA, Type.Type[TA])], Type.Type[TA], Step[TA, VA]),
-      inValue: Step[TA, VA]
-  ): Step[TA, VA] = visitLetDefinition(value, attributes, valueName, valueDefinition, inValue)
+      valueDefinition: (Chunk[(Name, VA, Type.Type[TA])], Type.Type[TA], Step[TA, VA, EvalResult]),
+      inValue: Step[TA, VA, EvalResult]
+  ): Step[TA, VA, EvalResult] = visitLetDefinition(value, attributes, valueName, valueDefinition, inValue)
 
   def letRecursionCase(
       context: Unit,
       value: Value[TA, VA],
       attributes: VA,
-      valueDefinitions: Map[Name, (Chunk[(Name, VA, Type.Type[TA])], Type.Type[TA], Step[TA, VA])],
-      inValue: Step[TA, VA]
-  ): Step[TA, VA] = visitLetRecursion(value, attributes, valueDefinitions, inValue)
+      valueDefinitions: Map[Name, (Chunk[(Name, VA, Type.Type[TA])], Type.Type[TA], Step[TA, VA, EvalResult])],
+      inValue: Step[TA, VA, EvalResult]
+  ): Step[TA, VA, EvalResult] = visitLetRecursion(value, attributes, valueDefinitions, inValue)
 
   def listCase(
       context: Unit,
       value: Value[TA, VA],
       attributes: VA,
-      elements: Chunk[Step[TA, VA]]
-  ): Step[TA, VA] = visitList(value, attributes, elements)
+      elements: Chunk[Step[TA, VA, EvalResult]]
+  ): Step[TA, VA, EvalResult] = visitList(value, attributes, elements)
 
-  def literalCase(context: Unit, value: Value[TA, VA], attributes: VA, literal: Lit): Step[TA, VA] =
+  def literalCase(context: Unit, value: Value[TA, VA], attributes: VA, literal: Lit): Step[TA, VA, EvalResult] =
     visitLiteral(value, attributes, literal)
 
   def patternMatchCase(
       context: Unit,
       value: Value[TA, VA],
       attributes: VA,
-      branchOutOn: Step[TA, VA],
-      cases: Chunk[(Pattern[VA], Step[TA, VA])]
-  ): Step[TA, VA] = visitPatternMatch(value, attributes, branchOutOn, cases)
+      branchOutOn: Step[TA, VA, EvalResult],
+      cases: Chunk[(Pattern[VA], Step[TA, VA, EvalResult])]
+  ): Step[TA, VA, EvalResult] = visitPatternMatch(value, attributes, branchOutOn, cases)
 
   def recordCase(
       context: Unit,
       value: Value[TA, VA],
       attributes: VA,
-      fields: Chunk[(Name, Step[TA, VA])]
-  ): Step[TA, VA] = visitRecord(value, attributes, fields)
-  def referenceCase(context: Unit, value: Value[TA, VA], attributes: VA, name: FQName): Step[TA, VA] =
+      fields: Chunk[(Name, Step[TA, VA, EvalResult])]
+  ): Step[TA, VA, EvalResult] = visitRecord(value, attributes, fields)
+  def referenceCase(context: Unit, value: Value[TA, VA], attributes: VA, name: FQName): Step[TA, VA, EvalResult] =
     visitReference(value, attributes, name)
 
   def tupleCase(
       context: Unit,
       value: Value[TA, VA],
       attributes: VA,
-      elements: Chunk[Step[TA, VA]]
-  ): Step[TA, VA] = visitTuple(value, attributes, elements)
+      elements: Chunk[Step[TA, VA, EvalResult]]
+  ): Step[TA, VA, EvalResult] = visitTuple(value, attributes, elements)
 
-  override def unitCase(context: Unit, value: Value[TA, VA], attributes: VA): Step[TA, VA] =
+  override def unitCase(context: Unit, value: Value[TA, VA], attributes: VA): Step[TA, VA, EvalResult] =
     visitUnit(value, attributes)
 
   override def updateRecordCase(
       context: Unit,
       value: Value[TA, VA],
       attributes: VA,
-      valueToUpdate: Step[TA, VA],
-      fieldsToUpdate: Map[Name, Step[TA, VA]]
-  ): Step[TA, VA] = visitUpdateRecord(value, attributes, valueToUpdate, fieldsToUpdate)
+      valueToUpdate: Step[TA, VA, EvalResult],
+      fieldsToUpdate: Map[Name, Step[TA, VA, EvalResult]]
+  ): Step[TA, VA, EvalResult] = visitUpdateRecord(value, attributes, valueToUpdate, fieldsToUpdate)
 
-  override def variableCase(context: Unit, value: Value[TA, VA], attributes: VA, name: Name): Step[TA, VA] =
+  override def variableCase(context: Unit, value: Value[TA, VA], attributes: VA, name: Name): Step[TA, VA, EvalResult] =
     visitVariable(value, attributes, name)
 
   def visitApply(
       value: Value[TA, VA],
       attributes: VA,
-      function: Step[TA, VA],
-      argument: Step[TA, VA]
-  ): Step[TA, VA] = ???
+      function: Step[TA, VA, EvalResult],
+      argument: Step[TA, VA, EvalResult]
+  ): Step[TA, VA, EvalResult] = ???
 
-  def visitConstructor(value: Value[TA, VA], attributes: VA, name: FQName): Step[TA, VA] = ???
+  def visitConstructor(value: Value[TA, VA], attributes: VA, name: FQName): Step[TA, VA, EvalResult] = ???
 
   def visitDestructure(
       value: Value[TA, VA],
       attributes: VA,
       pattern: Pattern[VA],
-      valueToDestruct: Step[TA, VA],
-      inValue: Step[TA, VA]
-  ): Step[TA, VA] = ???
+      valueToDestruct: Step[TA, VA, EvalResult],
+      inValue: Step[TA, VA, EvalResult]
+  ): Step[TA, VA, EvalResult] = ???
   def visitField(
       value: Value[TA, VA],
       attributes: VA,
-      subjectValue: Step[TA, VA],
+      subjectValue: Step[TA, VA, EvalResult],
       fieldName: Name
-  ): Step[TA, VA] = ???
+  ): Step[TA, VA, EvalResult] = ???
 
-  def visitFieldFunction(value: Value[TA, VA], attributes: VA, fieldName: Name): Step[TA, VA] = ???
+  def visitFieldFunction(value: Value[TA, VA], attributes: VA, fieldName: Name): Step[TA, VA, EvalResult] = ???
 
   def visitIfThenElse(
       value: Value[TA, VA],
       attributes: VA,
-      condition: Step[TA, VA],
-      thenBranch: Step[TA, VA],
-      elseBranch: Step[TA, VA]
-  ): Step[TA, VA] = ???
+      condition: Step[TA, VA, EvalResult],
+      thenBranch: Step[TA, VA, EvalResult],
+      elseBranch: Step[TA, VA, EvalResult]
+  ): Step[TA, VA, EvalResult] = ???
 
   def visitLambda(
       value: Value[TA, VA],
       attributes: VA,
       argumentPattern: Pattern[VA],
-      body: Step[TA, VA]
-  ): Step[TA, VA] = ???
+      body: Step[TA, VA, EvalResult]
+  ): Step[TA, VA, EvalResult] = ???
 
   def visitLetDefinition(
       value: Value[TA, VA],
       attributes: VA,
       valueName: Name,
-      valueDefinition: (Chunk[(Name, VA, Type.Type[TA])], Type.Type[TA], Step[TA, VA]),
-      inValue: Step[TA, VA]
-  ): Step[TA, VA] = ???
+      valueDefinition: (Chunk[(Name, VA, Type.Type[TA])], Type.Type[TA], Step[TA, VA, EvalResult]),
+      inValue: Step[TA, VA, EvalResult]
+  ): Step[TA, VA, EvalResult] = ???
 
   def visitLetRecursion(
       value: Value[TA, VA],
       attributes: VA,
-      valueDefinitions: Map[Name, (Chunk[(Name, VA, Type.Type[TA])], Type.Type[TA], Step[TA, VA])],
-      inValue: Step[TA, VA]
-  ): Step[TA, VA] = ???
+      valueDefinitions: Map[Name, (Chunk[(Name, VA, Type.Type[TA])], Type.Type[TA], Step[TA, VA, EvalResult])],
+      inValue: Step[TA, VA, EvalResult]
+  ): Step[TA, VA, EvalResult] = ???
 
-  def visitList(value: Value[TA, VA], attributes: VA, elements: Chunk[Step[TA, VA]]): Step[TA, VA] = ???
+  def visitList(
+      value: Value[TA, VA],
+      attributes: VA,
+      elements: Chunk[Step[TA, VA, EvalResult]]
+  ): Step[TA, VA, EvalResult] =
+    Step.collectAll(elements).map(_.toList)
 
-  def visitLiteral(value: Value[TA, VA], attributes: VA, literal: Lit): Step[TA, VA] = ???
+  def visitLiteral(value: Value[TA, VA], attributes: VA, literal: Lit): Step[TA, VA, EvalResult] = Step.succeed {
+    // TODO: Look at the type annotation and convert to the correct type
+    literal match {
+      case StringLiteral(value)      => value
+      case FloatLiteral(value)       => value
+      case CharLiteral(value)        => value
+      case BoolLiteral(value)        => value
+      case WholeNumberLiteral(value) => value
+      case DecimalLiteral(value)     => value
+    }
+  }
 
   def visitPatternMatch(
       value: Value[TA, VA],
       attributes: VA,
-      branchOutOn: Step[TA, VA],
-      cases: Chunk[(Pattern[VA], Step[TA, VA])]
-  ): Step[TA, VA] = ???
+      branchOutOn: Step[TA, VA, EvalResult],
+      cases: Chunk[(Pattern[VA], Step[TA, VA, EvalResult])]
+  ): Step[TA, VA, EvalResult] = ???
 
-  def visitRecord(value: Value[TA, VA], attributes: VA, fields: Chunk[(Name, Step[TA, VA])]): Step[TA, VA] =
+  def visitRecord(
+      value: Value[TA, VA],
+      attributes: VA,
+      fields: Chunk[(Name, Step[TA, VA, EvalResult])]
+  ): Step[TA, VA, EvalResult] =
     ???
 
-  def visitReference(value: Value[TA, VA], attributes: VA, name: FQName): Step[TA, VA] = ???
+  def visitReference(value: Value[TA, VA], attributes: VA, name: FQName): Step[TA, VA, EvalResult] = ???
 
-  def visitTuple(value: Value[TA, VA], attributes: VA, elements: Chunk[Step[TA, VA]]): Step[TA, VA] = ???
+  def visitTuple(
+      value: Value[TA, VA],
+      attributes: VA,
+      elements: Chunk[Step[TA, VA, EvalResult]]
+  ): Step[TA, VA, EvalResult] = ???
 
-  def visitUnit(value: Value[TA, VA], attributes: VA): Step[TA, VA] = Step.succeed(())
+  def visitUnit(value: Value[TA, VA], attributes: VA): Step[TA, VA, EvalResult] = Step.succeed(())
 
   def visitUpdateRecord(
       value: Value[TA, VA],
       attributes: VA,
-      valueToUpdate: Step[TA, VA],
-      fieldsToUpdate: Map[Name, Step[TA, VA]]
-  ): Step[TA, VA] = ???
+      valueToUpdate: Step[TA, VA, EvalResult],
+      fieldsToUpdate: Map[Name, Step[TA, VA, EvalResult]]
+  ): Step[TA, VA, EvalResult] = ???
 
-  def visitVariable(value: Value[TA, VA], attributes: VA, name: Name): Step[TA, VA] = ???
-
+  def visitVariable(value: Value[TA, VA], attributes: VA, name: Name): Step[TA, VA, EvalResult] =
+    Context.lookupVariableStep[TA, VA](Var(name)).map(_.resolvedValue)
 }
 
 object EvaluationEngine {
 
-  def evaluate[TA:Tag,VA:Tag](value:Value[TA,VA]):ZStep[EvaluationEngine[TA,VA], TA,VA] = Step.serviceWithPure[EvaluationEngine[TA,VA]] { engine =>
-    engine.evaluate(value)
-  }
+  /**
+   * Evaluate a value in the context of the given evaluation engine.
+   */
+  def evaluate[TA: Tag, VA: Tag](value: Value[TA, VA]): ZStep[EvaluationEngine[TA, VA], TA, VA, EvalResult] =
+    Step.serviceWithPure[EvaluationEngine[TA, VA]] { engine =>
+      engine.evaluate(value)
+    }
 
-  def evaluateZIO[TA:Tag,VA:Tag](value:Value[TA,VA]):ZIO[EvaluationEngine[TA,VA] with Context[TA,VA], EvaluationError, EvalResult] = 
-    ZIO.serviceWithZIO[EvaluationEngine[TA,VA]] { engine =>
-      ZIO.serviceWithZIO[Context[TA,VA]] { context =>
-        val runnable = engine.evaluate(value).provideService(engine).provideState(context)    
+  def evaluateZIO[TA: Tag, VA: Tag](
+      value: Value[TA, VA]
+  ): ZIO[EvaluationEngine[TA, VA] with Context[TA, VA], EvaluationError, EvalResult] =
+    ZIO.serviceWithZIO[EvaluationEngine[TA, VA]] { engine =>
+      ZIO.serviceWithZIO[Context[TA, VA]] { context =>
+        val runnable = engine.evaluate(value).provideService(engine).provideState(context)
         ZIO.fromEither(runnable.runEither)
       }
-    } 
+    }
 
-  def evaluateZIO[TA:Tag,VA:Tag](value:Value[TA,VA], context:Context[TA,VA]):ZIO[EvaluationEngine[TA,VA], EvaluationError, EvalResult] = 
-    evaluateZIO(value).provideSome[EvaluationEngine[TA,VA]](ZLayer.succeed(context))
+  def evaluateZIO[TA: Tag, VA: Tag](
+      value: Value[TA, VA],
+      context: Context[TA, VA]
+  ): ZIO[EvaluationEngine[TA, VA], EvaluationError, EvalResult] =
+    evaluateZIO(value).provideSome[EvaluationEngine[TA, VA]](ZLayer.succeed(context))
 
-  def typed:EvaluationEngine[scala.Unit, UType] = new EvaluationEngine[scala.Unit,UType] {}
+  def typed: EvaluationEngine[scala.Unit, UType] = new EvaluationEngine[scala.Unit, UType] {}
 
   type EvalResult = Any
   type StepCompanion
 
-  type Step[TA,VA] =  ZStep[Any, TA, VA]
+  type Step[TA, VA, A] = ZStep[Any, TA, VA, A]
   val Step = ZPure.asInstanceOf[ZPure.type with StepCompanion]
 
-  type ZStep[-R, TA, VA] = ZPure[EngineEvent, Context[TA, VA], Context[TA, VA], R, EvaluationError, EvalResult]
+  type ZStep[-R, TA, VA, A] = ZPure[EngineEvent, Context[TA, VA], Context[TA, VA], R, EvaluationError, A]
   val ZStep = ZPure.asInstanceOf[ZPure.type with StepCompanion]
 
-  implicit class StepCompanionOps(val self:ZPure.type with StepCompanion) extends AnyVal {
+  implicit class StepCompanionOps(val self: ZPure.type with StepCompanion) extends AnyVal {
     def foo = ()
   }
-  
 
-  final case class Context[+TA,+VA](parent:Option[Context[TA,VA]]){ self => }
+  final case class Context[+TA, +VA](parent: Option[Context[TA, VA]], variables: Variables) { self =>
+    def scoped(bindings: VarBinding*): Context[TA, VA] = Context(parent = Some(self), variables = variables)
+
+    def variable(variable: Var): Option[VarValue] = variables.get(variable).orElse(parent.flatMap(_.variable(variable)))
+
+    def lookupVariable(
+        variable: Var
+    ): ZPure[EngineEvent, Any, Any, Any, EvaluationError.VariableNotFound, VarValue] = {
+      def loop(
+          context: Context[TA, VA]
+      ): ZPure[EngineEvent, Any, Any, Any, EvaluationError.VariableNotFound, VarValue] =
+        (context.parent, context.variables.get(variable)) match {
+          case (_, Some(value))  => ZPure.succeed(value)
+          case (Some(parent), _) => loop(parent) ?? LogEvent.Trace("Looking up variable in parent context")
+          case _                 => ZPure.fail(EvaluationError.VariableNotFound(variable.name))
+        }
+      loop(self)
+    }
+
+  }
   object Context {
-    def root[TA,VA]:Context[TA,VA] = Context(None)
+    def createRoot[TA, VA](bindings: VarBinding*): Context[TA, VA] =
+      Context(parent = None, Variables.withBindings(bindings: _*))
+
+    def lookupVariable[TA: Tag, VA: Tag](
+        variable: Var
+    ): ZPure[EngineEvent, Any, Any, Context[TA, VA], EvaluationError.VariableNotFound, VarValue] =
+      ZPure.serviceWithPure[Context[TA, VA]](_.lookupVariable(variable))
+
+    def lookupVariableStep[TA: Tag, VA: Tag](variable: Var): Step[TA, VA, VarValue] =
+      Step.get[Context[TA, VA]].flatMap(context => context.lookupVariable(variable) <* Step.set(context))
+
     type Typed = Context[scala.Unit, UType]
     object Typed {
-      def root:Typed = Context[scala.Unit, UType](None)
+      def createRoot(bindings: VarBinding*): Typed = Context.createRoot[scala.Unit, UType](bindings: _*)
+      def lookupVariable(
+          variable: Var
+      ): ZPure[EngineEvent, Any, Any, Context[Unit, UType], EvaluationError.VariableNotFound, VarValue] =
+        Context.lookupVariable[scala.Unit, UType](variable)
     }
   }
 
-  final case class Variables[+TA,+VA](bindings:Map[Name, VarRef])
+  final case class Variables(bindings: Map[Var, VarValue]) { self =>
+    def +=(binding: VarBinding): Variables = Variables(
+      bindings + (binding.variable -> VarValue.Resolved(binding.value))
+    )
 
-  sealed trait VarRef
+    def ++=(bindings: VarBinding*): Variables = Variables(
+      self.bindings ++ bindings.map(b => b.variable -> VarValue.Resolved(b.value))
+    )
+
+    def apply(variable: Var): VarValue = bindings.get(variable) match {
+      case Some(value) => value
+      case None        => throw new EvaluationError.VariableNotFound(variable.name)
+    }
+
+    def get(variable: Var): Option[VarValue] = bindings.get(variable)
+  }
+
+  object Variables {
+    val empty: Variables = Variables(Map.empty)
+    def withBindings(bindings: VarBinding*): Variables = Variables(
+      bindings.map(b => b.variable -> VarValue.Resolved(b.value)).toMap
+    )
+  }
+
+  type Var = Var.Type
+  object Var extends Newtype[Name] {
+    implicit class VarOps(val self: Var) extends AnyVal {
+      def name: Name = unwrap(self)
+
+      def :=(value: Any) = VarBinding(self, value)
+    }
+  }
+
+  final case class VarBinding(variable: Var, value: Any)
+
+  sealed trait VarValue { self =>
+    def resolvedValue: Any = self match {
+      case VarValue.Resolved(value) => value
+    }
+  }
+  object VarValue {
+    final case class Resolved(value: Any) extends VarValue
+  }
+
 }
