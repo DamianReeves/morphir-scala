@@ -1,7 +1,8 @@
 {
   "name": "morphir-develop",
-  "private": "true",
+  "private": true,
   "devDependencies": {
+    "sass": "^1.57.0",
     "vite": "^4.0.1"
   },
   "scripts": {

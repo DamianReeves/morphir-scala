@@ -13,6 +13,11 @@ object Deps {
       case object common {
         val tagging = ivy"com.softwaremill.common::tagging::2.3.3"
       }
+      case object sttp {
+        case object client3 {
+          val core = ivy"com.softwaremill.sttp.client3::core::${Versions.sttp}"
+        }
+      }
     }
   }
   case object dev {
@@ -20,6 +25,7 @@ object Deps {
       val `izumi-reflect`     = ivy"dev.zio::izumi-reflect::${Versions.`izumi-reflect`}"
       val zio: Dep            = ivy"dev.zio::zio::${Versions.zio}"
       val `zio-cli`           = ivy"dev.zio::zio-cli::${Versions.`zio-cli`}"
+      val `zio-http`          = ivy"dev.zio::zio-http::${Versions.`zio-http`}"
       val `zio-json`: Dep     = ivy"dev.zio::zio-json::${Versions.`zio-json`}"
       val `zio-json-golden`   = ivy"dev.zio::zio-json-golden::${Versions.`zio-json`}"
       val `zio-prelude`       = ivy"dev.zio::zio-prelude::${Versions.`zio-prelude`}"
