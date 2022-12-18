@@ -60,6 +60,10 @@ trait MorphirCrossScalaModule extends CommonCrossModule {
 trait MorphirScalaModule extends CommonScalaModule {}
 trait MorphirTestModule  extends CommonTestModule  {}
 
+trait MorphirScalaJsModule extends ScalaJSModule with CommonScalaModule {
+
+}
+
 trait CommonScalaModule extends ScalaModule with CommonCoursierModule with ScalafmtModule with ScalaMetalsSupport {
   self =>
   def crossScalaVersion: String

@@ -6,12 +6,13 @@ import mill.api.Result.Success
 import $file.project.deps, deps.{Deps, ScalaVersions}
 import $file.project.modules.dependencyCheck //, dependencyCheck.DependencyCheck
 import $file.project.modules.shared,
-shared.{MorphirCrossScalaModule, MorphirScalaModule, MorphirTestModule, MorphirPublishModule}
+shared.{MorphirCrossScalaModule, MorphirScalaJsModule, MorphirScalaModule, MorphirTestModule, MorphirPublishModule}
 import $file.project.modules.docs, docs.{Docusaurus2Module, MDocModule}
 import $ivy.`com.lihaoyi::mill-contrib-buildinfo:$MILL_VERSION`
 
 import de.tobiasroeser.mill.vcs.version.VcsVersion
 import mill._, scalalib._, scalafmt._
+import mill.scalajslib._, mill.scalajslib.api._
 import mill.contrib.buildinfo.BuildInfo
 import mill.define.Sources
 import mill.modules.Jvm
@@ -44,6 +45,43 @@ object morphir extends Module {
     class KnowledgeModule(val crossScalaVersion: String) extends MorphirCrossScalaModule {
       def ivyDeps    = Agg(com.lihaoyi.sourcecode, dev.zio.`zio-streams`)
       def moduleDeps = Seq(morphir.toolkit.core(crossScalaVersion))
+      object test extends Tests with MorphirTestModule {}
+    }
+  }
+
+  object develop extends Module {
+    object backend extends MorphirScalaModule with MorphirPublishModule {
+      val crossScalaVersion = morphirScalaVersion
+
+      def sources = T.sources(
+        millSourcePath / "src",
+        millSourcePath / os.up / "shared" / "src"
+      )
+
+      def ivyDeps = super.ivyDeps() ++ Agg(dev.zio.zio, dev.zio.`zio-http`)
+      object test extends Tests with MorphirTestModule
+    }
+    object frontend extends MorphirScalaJsModule {
+      val crossScalaVersion = morphirScalaVersion
+
+      def scalaJSVersion = ScalaVersions.scalajs
+
+      def moduleKind = T(ModuleKind.ESModule)
+
+      def moduleSplitStyle = T(ModuleSplitStyle.SmallModulesFor(List("org.finos.morphir.develop")))
+
+      def sources = T.sources(
+        millSourcePath / "src",
+        millSourcePath / os.up / "shared" / "src"
+      )
+
+      def ivyDeps = Agg(com.softwaremill.sttp.client3.core)
+
+      // These two tasks are used by Vite to get update path
+      def fastLinkOut() = T.command(println(fastLinkJS().dest.path))
+
+      def fullLinkOut() = T.command(println(fullLinkJS().dest.path))
+
       object test extends Tests with MorphirTestModule {}
     }
   }

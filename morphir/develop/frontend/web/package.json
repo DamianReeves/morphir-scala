@@ -1,0 +1,12 @@
+{
+  "name": "morphir-develop",
+  "private": "true",
+  "devDependencies": {
+    "vite": "^4.0.1"
+  },
+  "scripts": {
+    "build": "vite build",
+    "dev": "vite dev",
+    "start": "vite"
+  }
+}

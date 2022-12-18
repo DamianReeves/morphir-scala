@@ -50,6 +50,18 @@ object Deps {
       val `scala-uri` = ivy"io.lemonlabs::scala-uri:4.0.3"
     }
   }
+
+  case object me {
+    case object shadaj {
+      case object slinky {
+        val core = ivy"me.shaday::slinky-core::${Versions.slinky}"
+        val hot = ivy"me.shaday::slinky-hot::${Versions.slinky}"
+        val native = ivy"me.shaday::slinky-native::${Versions.slinky}"
+        val web = ivy"me.shaday::slinky-web::${Versions.slinky}"
+      }
+    }
+  }
+
   case object org {
     case object `scala-lang` {
       def `scala3-compiler`(scalaVersion: String): Dep = ivy"org.scala-lang::scala3-compiler:$scalaVersion"
@@ -89,20 +101,25 @@ object Versions {
   val coursier        = "2.1.0-RC3-1"
   val geny            = "1.0.0"
   val `izumi-reflect` = "2.2.2"
-  val munit           = "1.0.0-M4"
-  val mainargs        = "0.3.0"
-  val `os-lib`        = "0.8.1"
-  val paiges          = "0.4.2"
-  val zio             = "2.0.4"
-  val `zio-cli`       = "0.3.0-M02"
-  val `zio-json`      = "0.3.0"
-  val `zio-prelude`   = "1.0.0-RC16"
-  val `zio-process`   = "0.7.1"
-  val `zio-schema`    = "0.4.1"
+  val munit         = "1.0.0-M4"
+  val mainargs      = "0.3.0"
+  val `os-lib`      = "0.9.0"
+  val paiges        = "0.4.2"
+  val slinky        = "0.7.2"
+  val sttp          = "3.8.5"
+  val zio           = "2.0.5"
+  val `zio-cli`     = "0.3.0-M02"
+  val `zio-http`    = "0.0.3"
+  val `zio-json`    = "0.4.2"
+  val `zio-prelude` = "1.0.0-RC16"
+  val `zio-process` = "0.7.1"
+  val `zio-schema`  = "0.4.1"
 }
 
 object ScalaVersions {
   val all      = Seq(scala213, scala3x)
   def scala213 = "2.13.10"
   def scala3x  = "3.2.1"
+
+  val scalajs = "1.12.0"
 }
