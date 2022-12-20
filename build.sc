@@ -75,7 +75,7 @@ object morphir extends Module {
         millSourcePath / os.up / "shared" / "src"
       )
 
-      def ivyDeps = Agg(com.softwaremill.sttp.client3.core)
+      def ivyDeps = Agg(com.softwaremill.sttp.client3.core, me.shadaj.`slinky-core`, me.shadaj.`slinky-web`)
 
       // These two tasks are used by Vite to get update path
       def fastLinkOut() = T.command(println(fastLinkJS().dest.path))

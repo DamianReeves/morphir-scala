@@ -1,6 +1,7 @@
 import { spawnSync } from "child_process";
 import {resolve} from "path";
 import { defineConfig } from "vite";
+import react from '@vitejs/plugin-react'
 
 function isDev() {
     return process.env.NODE_ENV !== "production";
@@ -34,6 +35,7 @@ const linkOutputDir = isDev()
     : printMillTask("fullLinkOut");
 
 export default defineConfig({
+    plugins: [react()],
     resolve: {
         alias: [
             {

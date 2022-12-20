@@ -59,12 +59,10 @@ object Deps {
 
   case object me {
     case object shadaj {
-      case object slinky {
-        val core = ivy"me.shaday::slinky-core::${Versions.slinky}"
-        val hot = ivy"me.shaday::slinky-hot::${Versions.slinky}"
-        val native = ivy"me.shaday::slinky-native::${Versions.slinky}"
-        val web = ivy"me.shaday::slinky-web::${Versions.slinky}"
-      }
+        val `slinky-core` = ivy"me.shadaj::slinky-core::${Versions.slinky}"
+        val `slinky-hot` = ivy"me.shadaj::slinky-hot::${Versions.slinky}"
+        val `slinky-native` = ivy"me.shadaj::slinky-native::${Versions.slinky}"
+        val `slinky-web` = ivy"me.shadaj::slinky-web::${Versions.slinky}"
     }
   }
 
@@ -111,7 +109,7 @@ object Versions {
   val mainargs      = "0.3.0"
   val `os-lib`      = "0.9.0"
   val paiges        = "0.4.2"
-  val slinky        = "0.7.2"
+  val slinky        = "0.7.2+20-ee85c329"
   val sttp          = "3.8.5"
   val zio           = "2.0.5"
   val `zio-cli`     = "0.3.0-M02"
