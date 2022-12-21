@@ -1,12 +1,13 @@
 package org.finos.morphir.develop.frontend
 
+import org.finos.morphir.develop.frontend.components.WebApp
 import org.finos.morphir.develop.shared.SharedConfig
-import org.scalajs.dom._
-import slinky.core._
-import slinky.core.facade.Hooks._
+import org.scalajs.dom.*
+import slinky.core.*
+import slinky.core.facade.Hooks.*
 import slinky.web.ReactDOM
-import slinky.web.html._
-import sttp.client3.quick._
+import slinky.web.html.*
+import sttp.client3.quick.*
 object MorphirDevelopUI:
   case class Props(name:String)
 
@@ -20,6 +21,7 @@ object MorphirDevelopUI:
     })
     div(
       h1(s"Hello, ${props.name}!"),
+      WebApp(),
       div(s"$label")
     )
   }
@@ -52,6 +54,10 @@ object MorphirDevelopUI:
       .map { response =>
         callback(node, response.body, nodeType, "")
       }
+
+
+
+
 
 
 
