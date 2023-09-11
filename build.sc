@@ -298,6 +298,17 @@ trait MorphirModule extends Cross.Module[String] with CrossPlatform { morphir =>
           }
         }
       }
+
+      object schema extends CrossPlatform with CrossValue {
+        trait Shared extends MorphirCommonCrossModule with MorphirPublishModule {
+          def ivyDeps = Agg(Deps.dev.zio.`zio-schema`)
+          def platformSpecificModuleDeps = Seq(morphir)
+        }
+
+        object jvm extends Shared with MorphirJVMModule
+        object js extends Shared with MorphirJSModule
+
+      }
     }
 
   }

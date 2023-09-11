@@ -98,6 +98,7 @@ object Deps {
       val `zio-prelude`        = prelude()
       val `zio-prelude-macros` = prelude.macros
       val `zio-process`        = ivy"dev.zio::zio-process::${Versions.`zio-process`}"
+      val `zio-schema`         = ivy"dev.zio::zio-schema::${Versions.`zio-schema`}"
       val `zio-streams`        = ivy"dev.zio::zio-streams::${Versions.zio}"
       val `zio-test`           = ivy"dev.zio::zio-test::${Versions.zio}"
       val `zio-test-magnolia`  = ivy"dev.zio::zio-test-magnolia::${Versions.zio}"
