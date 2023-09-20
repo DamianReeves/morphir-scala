@@ -1,10 +1,10 @@
 #!/usr/bin/env sh
 
-# This is a wrapper script, that automatically download mill from GitHub release pages
-# You can give the required mill version with --mill-version parameter
+# This is a wrapper script, that automatically download morphir from GitHub release pages
+# You can give the required morphir version with --morphir-version parameter
 # If no version is given, it falls back to the value of DEFAULT_MORPHIR_VERSION
 #
-# Project page: https://github.com/lefou/millw
+# Project page: https://github.com/lefou/morphirw
 # Script Version: 0.4.8
 #
 # If you want to improve this script, please also contribute your changes back!
@@ -23,20 +23,20 @@ if [ -z "${GITHUB_RELEASE_CDN}" ] ; then
 fi
 
 
-MORPHIR_REPO_URL="https://github.com/com-lihaoyi/mill"
+MORPHIR_REPO_URL="https://github.com/com-lihaoyi/morphir"
 
 if [ -z "${CURL_CMD}" ] ; then
   CURL_CMD=curl
 fi
 
 # Explicit commandline argument takes precedence over all other methods
-if [ "$1" = "--mill-version" ] ; then
+if [ "$1" = "--morphir-version" ] ; then
   shift
   if [ "x$1" != "x" ] ; then
     MORPHIR_VERSION="$1"
     shift
   else
-    echo "You specified --mill-version without a version." 1>&2
+    echo "You specified --morphir-version without a version." 1>&2
     echo "Please provide a version that matches one provided on" 1>&2
     echo "${MORPHIR_REPO_URL}/releases" 1>&2
     false
@@ -46,28 +46,28 @@ fi
 # Please note, that if a MORPHIR_VERSION is already set in the environment,
 # We reuse it's value and skip searching for a value.
 
-# If not already set, read .mill-version file
+# If not already set, read .morphir-version file
 if [ -z "${MORPHIR_VERSION}" ] ; then
-  if [ -f ".mill-version" ] ; then
-    MORPHIR_VERSION="$(head -n 1 .mill-version 2> /dev/null)"
-  elif [ -f ".config/mill-version" ] ; then
-    MORPHIR_VERSION="$(head -n 1 .config/mill-version 2> /dev/null)"
+  if [ -f ".morphir-version" ] ; then
+    MORPHIR_VERSION="$(head -n 1 .morphir-version 2> /dev/null)"
+  elif [ -f ".config/morphir-version" ] ; then
+    MORPHIR_VERSION="$(head -n 1 .config/morphir-version 2> /dev/null)"
   fi
 fi
 
 if [ -z "${MORPHIR_DOWNLOAD_PATH}" ] ; then
   if [ -n "${XDG_CACHE_HOME}" ] ; then
-    MORPHIR_DOWNLOAD_PATH="${XDG_CACHE_HOME}/mill/download"
+    MORPHIR_DOWNLOAD_PATH="${XDG_CACHE_HOME}/morphir/download"
   else
-    MORPHIR_DOWNLOAD_PATH="${HOME}/.cache/mill/download"
+    MORPHIR_DOWNLOAD_PATH="${HOME}/.cache/morphir/download"
   fi
 fi
 
 # If not already set, try to fetch newest from Github
 if [ -z "${MORPHIR_VERSION}" ] ; then
   # TODO: try to load latest version from release page
-  echo "No mill version specified." 1>&2
-  echo "You should provide a version via '.mill-version' file or --mill-version option." 1>&2
+  echo "No morphir version specified." 1>&2
+  echo "You should provide a version via '.morphir-version' file or --morphir-version option." 1>&2
 
   mkdir -p "${MORPHIR_DOWNLOAD_PATH}"
   LANG=C touch -d '1 hour ago' "${MORPHIR_DOWNLOAD_PATH}/.expire_latest" 2>/dev/null || (
@@ -89,7 +89,7 @@ if [ -z "${MORPHIR_VERSION}" ] ; then
 
   if [ -z "${MORPHIR_VERSION}" ] ; then
     # we don't know a current latest version
-    echo "Retrieving latest mill version ..." 1>&2
+    echo "Retrieving latest morphir version ..." 1>&2
     LANG=C ${CURL_CMD} -s -i -f -I ${MORPHIR_REPO_URL}/releases/latest 2> /dev/null  | grep --ignore-case Location: | sed s'/^.*tag\///' | tr -d '\r\n' > "${MORPHIR_DOWNLOAD_PATH}/.latest"
     MORPHIR_VERSION=$(head -n 1 "${MORPHIR_DOWNLOAD_PATH}"/.latest 2> /dev/null)
   fi
@@ -97,16 +97,16 @@ if [ -z "${MORPHIR_VERSION}" ] ; then
   if [ -z "${MORPHIR_VERSION}" ] ; then
     # Last resort
     MORPHIR_VERSION="${DEFAULT_MORPHIR_VERSION}"
-    echo "Falling back to hardcoded mill version ${MORPHIR_VERSION}" 1>&2
+    echo "Falling back to hardcoded morphir version ${MORPHIR_VERSION}" 1>&2
   else
-    echo "Using mill version ${MORPHIR_VERSION}" 1>&2
+    echo "Using morphir version ${MORPHIR_VERSION}" 1>&2
   fi
 fi
 
 MORPHIR="${MORPHIR_DOWNLOAD_PATH}/${MORPHIR_VERSION}"
 
-try_to_use_system_mill() {
-  MORPHIR_IN_PATH="$(command -v mill || true)"
+try_to_use_system_morphir() {
+  MORPHIR_IN_PATH="$(command -v morphir || true)"
 
   if [ -z "${MORPHIR_IN_PATH}" ]; then
     return
@@ -116,7 +116,7 @@ try_to_use_system_mill() {
 
   if ! head -c 128 "${MORPHIR_IN_PATH}" | grep -qF "${UNIVERSAL_SCRIPT_MAGIC}"; then
     if [ -n "${MORPHIRW_VERBOSE}" ]; then
-      echo "Could not determine mill version of ${MORPHIR_IN_PATH}, as it does not start with the universal script magic2" 1>&2
+      echo "Could not determine morphir version of ${MORPHIR_IN_PATH}, as it does not start with the universal script magic2" 1>&2
     fi
     return
   fi
@@ -128,7 +128,7 @@ try_to_use_system_mill() {
                          head -n 1)
 
   if [ -z "${MORPHIR_IN_PATH_VERSION}" ]; then
-    echo "Could not determine mill version, even though ${MORPHIR_IN_PATH} has the universal script magic" 1>&2
+    echo "Could not determine morphir version, even though ${MORPHIR_IN_PATH} has the universal script magic" 1>&2
     return
   fi
 
@@ -136,13 +136,13 @@ try_to_use_system_mill() {
     MORPHIR="${MORPHIR_IN_PATH}"
   fi
 }
-try_to_use_system_mill
+try_to_use_system_morphir
 
 # If not already downloaded, download it
 if [ ! -s "${MORPHIR}" ] ; then
 
   # support old non-XDG download dir
-  MORPHIR_OLD_DOWNLOAD_PATH="${HOME}/.mill/download"
+  MORPHIR_OLD_DOWNLOAD_PATH="${HOME}/.morphir/download"
   OLD_MORPHIR="${MORPHIR_OLD_DOWNLOAD_PATH}/${MORPHIR_VERSION}"
   if [ -x "${OLD_MORPHIR}" ] ; then
     MORPHIR="${OLD_MORPHIR}"
@@ -162,10 +162,10 @@ if [ ! -s "${MORPHIR}" ] ; then
         ;;
     esac
 
-    DOWNLOAD_FILE=$(mktemp mill.XXXXXX)
+    DOWNLOAD_FILE=$(mktemp morphir.XXXXXX)
 
     if [ "$DOWNLOAD_FROM_MAVEN" = "1" ] ; then
-      DOWNLOAD_URL="https://repo1.maven.org/maven2/com/lihaoyi/mill-dist/${MORPHIR_VERSION}/mill-dist-${MORPHIR_VERSION}.jar"
+      DOWNLOAD_URL="https://repo1.maven.org/maven2/com/lihaoyi/morphir-dist/${MORPHIR_VERSION}/morphir-dist-${MORPHIR_VERSION}.jar"
     else
       MORPHIR_VERSION_TAG=$(echo $MORPHIR_VERSION | sed -E 's/([^-]+)(-M[0-9]+)?(-.*)?/\1\2/')
       DOWNLOAD_URL="${GITHUB_RELEASE_CDN}${MORPHIR_REPO_URL}/releases/download/${MORPHIR_VERSION_TAG}/${MORPHIR_VERSION}${DOWNLOAD_SUFFIX}"
@@ -173,7 +173,7 @@ if [ ! -s "${MORPHIR}" ] ; then
     fi
 
     # TODO: handle command not found
-    echo "Downloading mill ${MORPHIR_VERSION} from ${DOWNLOAD_URL} ..." 1>&2
+    echo "Downloading morphir ${MORPHIR_VERSION} from ${DOWNLOAD_URL} ..." 1>&2
     ${CURL_CMD} -f -L -o "${DOWNLOAD_FILE}" "${DOWNLOAD_URL}"
     chmod +x "${DOWNLOAD_FILE}"
     mkdir -p "${MORPHIR_DOWNLOAD_PATH}"
@@ -203,4 +203,4 @@ unset MORPHIR_REPO_URL
 
 # We don't quote MORPHIR_FIRST_ARG on purpose, so we can expand the empty value without quotes
 # shellcheck disable=SC2086
-exec "${MORPHIR}" $MORPHIR_FIRST_ARG -D "mill.main.cli=${MORPHIR_MAIN_CLI}" "$@"
+exec "${MORPHIR}" $MORPHIR_FIRST_ARG -D "morphir.main.cli=${MORPHIR_MAIN_CLI}" "$@"
