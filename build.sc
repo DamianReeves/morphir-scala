@@ -314,6 +314,15 @@ trait MorphirModule extends Cross.Module[String] with CrossPlatform { morphir =>
     }
   }
 
+  object rdf extends CrossPlatform with CrossValue {
+    trait Shared extends MorphirCommonCrossModule with MorphirPublishModule {
+      def ivyDeps = Agg(
+        Deps.com.github.`j-mie6`.parsley,
+        Deps.org.typelevel.`scalac-compat-annotation`
+      )
+    }
+  }
+
   object runtime extends CrossPlatform with CrossValue {
 
     def enableNative(module: Module): Boolean = crossValue.startsWith("2.13.") && !devMode
@@ -453,7 +462,7 @@ trait MorphirModule extends Cross.Module[String] with CrossPlatform { morphir =>
       def ivyDeps = super.ivyDeps() ++ Agg(
         Deps.com.lihaoyi.sourcecode
       )
-      def platformSpecificModuleDeps = Seq(extensibility, morphir, runtime, tools)
+      def platformSpecificModuleDeps = Seq(extensibility, morphir, rdf, runtime, tools)
     }
 
     object jvm extends Shared with MorphirJVMModule {

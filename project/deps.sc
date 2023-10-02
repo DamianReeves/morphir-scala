@@ -50,6 +50,10 @@ object Deps {
         val `silencer-plugin` = ivy"com.github.ghik:::silencer-plugin:${Versions.silencer}"
       }
 
+      case object `j-mie6` {
+        val parsley = ivy"com.github.j-mie6::parsley::${Versions.parsley}"
+      }
+
       case object poslegm {
         val `munit-zio` = ivy"com.github.poslegm::munit-zio::${Versions.`munit-zio`}"
       }
@@ -210,6 +214,7 @@ object Versions {
   val mainargs                   = "0.5.0"
   val `os-lib`                   = "0.9.1"
   val paiges                     = "0.4.3"
+  val parsley                    = "4.3.1"
   val `scalac-compat-annotation` = "0.1.2"
   val scribe                     = "3.11.9"
   val silencer                   = "1.4.2"
