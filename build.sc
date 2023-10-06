@@ -279,6 +279,17 @@ trait MorphirModule extends Cross.Module[String] with CrossPlatform { morphir =>
 
   object interop extends Module {
 
+    object jena extends CrossPlatform with CrossValue {
+      trait Shared extends MorphirCommonCrossModule with MorphirPublishModule {
+        def ivyDeps = Agg(
+          Deps.org.apache.jena.`jena-core`
+        )
+        def platformSpecificModuleDeps = Seq(morphir, morphir.rdf)
+      }
+
+      object jvm extends Shared with MorphirJVMModule
+    }
+
     object zio extends Module {
       object json extends CrossPlatform with CrossValue {
         trait Shared extends MorphirCommonCrossModule with MorphirPublishModule {
@@ -318,9 +329,18 @@ trait MorphirModule extends Cross.Module[String] with CrossPlatform { morphir =>
     trait Shared extends MorphirCommonCrossModule with MorphirPublishModule {
       def ivyDeps = Agg(
         Deps.com.github.`j-mie6`.parsley,
-        Deps.org.typelevel.`scalac-compat-annotation`
+        Deps.org.typelevel.`scalac-compat-annotation`,
+        Deps.dev.zio.`zio`,
+        Deps.dev.zio.`zio-json`,
+        Deps.dev.zio.`zio-prelude`,
+        Deps.dev.zio.`zio-streams`
       )
     }
+
+    object jvm    extends Shared with MorphirJVMModule
+    object js     extends Shared with MorphirJSModule
+    object native extends Shared with MorphirNativeModule
+
   }
 
   object runtime extends CrossPlatform with CrossValue {
@@ -462,10 +482,12 @@ trait MorphirModule extends Cross.Module[String] with CrossPlatform { morphir =>
       def ivyDeps = super.ivyDeps() ++ Agg(
         Deps.com.lihaoyi.sourcecode
       )
+
       def platformSpecificModuleDeps = Seq(extensibility, morphir, rdf, runtime, tools)
     }
 
     object jvm extends Shared with MorphirJVMModule {
+      def moduleDeps = Seq(interop.jena.jvm)
       object test extends ScalaTests with TestModule.ZioTest {
 
         def ivyDeps = Agg(

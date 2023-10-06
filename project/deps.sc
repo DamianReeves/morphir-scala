@@ -149,6 +149,12 @@ object Deps {
     }
   }
   case object org {
+    case object apache {
+      case object jena {
+        val jena        = ivy"org.apache.jena:jena:${Versions.jena}"
+        val `jena-core` = ivy"org.apache.jena:jena-core:${Versions.jena}"
+      }
+    }
     case object `scala-lang` {
       def `scala-compiler`(scalaVersion: String): Dep  = ivy"org.scala-lang:scala-compiler:$scalaVersion"
       def `scala-reflect`(scalaVersion: String): Dep   = ivy"org.scala-lang:scala-reflect:$scalaVersion"
@@ -208,6 +214,7 @@ object Versions {
   val fs2                        = "3.9.1"
   val geny                       = "1.0.0"
   val `izumi-reflect`            = "2.3.8"
+  val jena                       = "4.9.0"
   val metaconfig                 = "0.11.1"
   val munit                      = "1.0.0-M8"
   val `munit-zio`                = "0.1.1"
