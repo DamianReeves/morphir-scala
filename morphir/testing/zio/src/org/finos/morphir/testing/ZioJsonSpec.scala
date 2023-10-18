@@ -25,4 +25,15 @@ trait ZioJsonSpec { self: ZIOSpecDefault =>
     val decoded = encoded.fromJson[A]
     assertTrue(decoded == Right(value))
   }
+
+  def jsonRoundtripSuite[A: JsonEncoder: JsonDecoder](label: String)(value: A, otherValues: A*) = {
+    val values = value +: otherValues
+    val size   = values.size
+    suite(label)(
+      values.zipWithIndex.map { case (value, index) =>
+        jsonRoundtripTest(s"Roundtrip test for value ${index + 1} of $size")(value)
+      }: _*
+    )
+  }
+
 }

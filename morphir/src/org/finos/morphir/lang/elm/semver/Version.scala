@@ -1,6 +1,7 @@
 package org.finos.morphir.lang.elm.semver
 
 import zio.Chunk
+import zio.json._
 import zio.prelude._
 
 /// A semantic version number, as used by the Elm tooling.
@@ -10,6 +11,8 @@ final case class Version(major: Long, minor: Long, patch: Long) { self =>
 }
 
 object Version {
+  implicit val codec: JsonCodec[Version] = DeriveJsonCodec.gen[Version]
+
   def fromString(version: String): Validation[String, Version] = {
     val parts = version.split('.').zipWithIndex.collect { case (part, idx) =>
       part.toLongOption match {
