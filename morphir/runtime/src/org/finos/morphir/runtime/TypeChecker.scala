@@ -10,12 +10,14 @@ import org.finos.morphir.ir.Value.{
   TypedDefinition as TypedValueDef,
   USpecification as UValueSpec
 }
-import org.finos.morphir.ir.Type.{Type, UType, USpecification as UTypeSpec}
+import org.finos.morphir.ir.Type.{Field, Type, UType, USpecification as UTypeSpec}
 import org.finos.morphir.ir.sdk
 import org.finos.morphir.ir.sdk.Basics
-import org.finos.morphir.ir.Field
-import org.finos.morphir.runtime.TypeError.CannotDealias
 import org.finos.morphir.runtime.exports.*
+import org.finos.morphir.ir.printing.{DetailLevel, PrintIR}
+import org.finos.morphir.runtime.quick.GatherReferences
+import zio.Chunk
+import org.finos.morphir.runtime.MorphirRuntimeError.*
 import TypeError.*
 
 object TypeChecker {
@@ -56,7 +58,7 @@ final class TypeChecker(dists: Distributions) {
         val modPart             = if (mod1 != mod2) s"{$mod1 </=/> $mod2}" else mod1
         val locPart = if (loc1 != loc2) s"{${loc1.toTitleCase} </=/> ${loc2.toTitleCase}" else loc1.toTitleCase
         s"$packPart:$modPart:$locPart"
-      case _ => s"(${Succinct.Type(tpe1, 2)} vs ${Succinct.Type(tpe2, 2)})"
+      case _ => s"(${PrintIR(tpe1)} vs ${PrintIR(tpe2)})"
     }
   }
   // Helper to check that two lists of types (such as tuple or arguments) match, both in length and contents
@@ -69,6 +71,25 @@ final class TypeChecker(dists: Distributions) {
       List(new ArgNumberMismatch(argList.size, paramList.size, s"${context.prefix} : Different arities: "))
     else
       argList.zip(paramList).flatMap { case (arg, param) => conformsTo(arg, param, context) }
+
+  def uncurryFunctionType(functionTpe: UType, context: Context): Either[TypeError, (UType, Chunk[UType])] =
+    for {
+      // Since the function-type could be curried in the middle e.g.
+      // type alias Foo = Int -> Int
+      // foofoo: Int -> Foo
+      // which need to be applied as foofoo: Int -> Int -> Int
+      // so we need to delias in the middle of it.
+      // Therefore before each uncurry step we need to dealias first.
+      dealiased <- dealias(functionTpe, context)
+      output <- dealiased match {
+        case Type.Function(_, arg, innerFunction) =>
+          uncurryFunctionType(innerFunction, context).map { case (ret, args) =>
+            (ret, arg +: args)
+          }
+        case other =>
+          Right((other, Chunk()))
+      }
+    } yield output
 
   // Fully dealises a type. (Note that it dos not dealias branching types, such as if a tuple has an aliased member
   def dealias(tpe: UType, context: Context): Either[TypeError, UType] = {
@@ -97,11 +118,32 @@ final class TypeChecker(dists: Distributions) {
     loop(tpe, None, context)
   }
 
+  def checkAllDefinitions(): List[TypeError] =
+    GatherReferences.fromDistributionLibs(dists.getDists).definitions.toList.filter(
+      !Utils.isNative(_)
+    ).flatMap(checkDefinitionBody(_))
+
+  def checkDefinitionBody(fqn: FQName): List[TypeError] = {
+    val maybeDefinition = dists.lookupValueDefinition(fqn)
+    maybeDefinition match {
+      case Left(error)       => List(error)
+      case Right(definition) => check(definition.body)
+    }
+  }
+
   def conformsTo(valueType: UType, declaredType: UType): List[TypeError] =
     conformsTo(valueType, declaredType, Context.empty)
+
   def conformsTo(valueType: UType, declaredType: UType, context: Context): List[TypeError] = {
     import Extractors.Types.*
     (valueType, declaredType) match {
+      // Dealias everything first! You need to do this before the (LeafValue, LeafValue) check
+      // and possibly the Type.Reference check (See elm error w/ unused type argument)
+      case (dealiased(value), declared) =>
+        conformsTo(value, declared, context)
+      case (value, dealiased(declared)) =>
+        conformsTo(value, declared, context)
+
       // TODO: Make variables fail if missing when binding support is up to the task
       case (_, Type.Variable(_, name)) => context.getTypeVariable(name) match {
           case None           => List() // List(new TypeVariableMissing(name))
@@ -111,8 +153,6 @@ final class TypeChecker(dists: Distributions) {
           case None           => List() // List(new TypeVariableMissing(name))
           case Some(lookedUp) => conformsTo(lookedUp, declaredType, context)
         }
-      case (left @ LeafType(), right @ LeafType()) =>
-        if (left == right) List() else List(TypesMismatch(left, right, "Value type does not match declared type"))
       case (Type.Function(_, valueArg, valueRet), Type.Function(_, declaredArg, declaredRet)) =>
         conformsTo(valueRet, declaredRet, context) ++ conformsTo(declaredArg, valueArg, context)
       case (Type.Tuple(_, valueElements), Type.Tuple(_, declaredElements)) =>
@@ -124,10 +164,11 @@ final class TypeChecker(dists: Distributions) {
         // Use .diff to find if some are entirely absent from the other
         val missingFromValue = valueFieldSet
           .diff(declaredFieldSet).toList.map(missing =>
-            TypeLacksField(valueTpe, missing, s"Required by ${Succinct.Type(declaredTpe)}")
+            TypeLacksField(valueTpe, missing, s"Required by ${PrintIR(declaredTpe)}")
           )
         val missingFromDeclared = declaredFieldSet
-          .diff(valueFieldSet).toList.map(bonus => TypeHasExtraField(valueTpe, declaredTpe, bonus))
+          .diff(valueFieldSet)
+          .toList.map(bonus => TypeHasExtraField(valueTpe, declaredTpe, bonus))
         // For everything shared, lookup types in both and ensure they match
         val sharedFields                       = valueFieldSet.intersect(declaredFieldSet)
         val valueFieldMap: Map[Name, UType]    = valueFields.map(field => field.name -> field.data).toMap
@@ -149,15 +190,12 @@ final class TypeChecker(dists: Distributions) {
           declaredArgs.toList,
           context.withPrefix(s"Comparing arguments on reference $valueName")
         )
-      case (dealiased(value), declared) =>
-        conformsTo(value, declared, context)
-      case (value, dealiased(declared)) =>
-        conformsTo(value, declared, context)
+      // TODO Perhaps leaf-type checking needs to be changed or removed?
+      case (left @ LeafType(), right @ LeafType()) =>
+        if (left == right) List() else List(TypesMismatch(left, right, "Value type does not match declared type"))
       case (valueOther, declaredOther) if valueOther.getClass == declaredOther.getClass =>
         List(
-          new UnimplementedType(
-            s"No matching support for ${Succinct.Type(valueOther)} vs ${Succinct.Type(declaredOther)}"
-          )
+          new UnknownTypeMismatch(valueOther, declaredOther)
         )
       case (valueOther, declaredOther) => List(new TypesMismatch(valueOther, declaredOther, "Different types of type"))
     }
@@ -171,7 +209,7 @@ final class TypeChecker(dists: Distributions) {
     dealias(suspect.attributes, context) match {
       case Right(tpe) => suspect match {
           case Literal(_, lit)              => handleLiteral(tpe, lit, context)
-          case Apply(_, function, argument) => handleApply(tpe, function, argument, context)
+          case Apply(_, function, argument) => handleApply(suspect, tpe, function, argument, context)
           case Destructure(_, pattern, valueToDestruct, inValue) =>
             handleDestructure(tpe, pattern, valueToDestruct, inValue, context)
           case Constructor(_, name)             => handleConstructor(tpe, name, context)
@@ -206,12 +244,19 @@ final class TypeChecker(dists: Distributions) {
       case (BoolLiteral(_), BoolRef())       => List()
       case (WholeNumberLiteral(_), IntRef()) => List() // TODO: "WholeNumberRef" extractor
       case (DecimalLiteral(_), DecimalRef()) => List()
+      case (_, Type.Variable(_, _))          => List() // TODO: Type variable handling
       case (otherLit, otherTpe)              => List(new LiteralTypeMismatch(otherLit, otherTpe))
     }
     fromChildren ++ matchErrors
   }
 
-  def handleApply(tpe: UType, function: TypedValue, argument: TypedValue, context: Context): TypeCheckerResult = {
+  def handleApply(
+      node: TypedValue,
+      tpe: UType,
+      function: TypedValue,
+      argument: TypedValue,
+      context: Context
+  ): TypeCheckerResult = {
     val fromChildren = check(function, context) ++ check(argument, context)
     val fromTpe =
       dealias(function.attributes, context) match {
@@ -221,7 +266,7 @@ final class TypeChecker(dists: Distributions) {
             tpe,
             context
           ) // TODO: Useful context lost here
-        case Right(_)  => List(new ApplyToNonFunction(function, argument))
+        case Right(_)  => List(new ApplyToNonFunction(node, function, argument))
         case Left(err) => List(err)
       }
     fromChildren ++ fromTpe
@@ -242,45 +287,54 @@ final class TypeChecker(dists: Distributions) {
   }
   def handleConstructor(tpe: UType, fqn: FQName, context: Context): TypeCheckerResult = {
     import Extractors.Types.*
-    val fromChildren = List()
-    val (ret, args)  = Utils.uncurryFunctionType(tpe) // TODO: Interleaved function type w/ aliases.
-    val fromTpe = ret match {
-      case NonNativeRef(name, typeArgs) => dists.lookupTypeSpecification(name) match {
-          case Right(T.Specification.CustomTypeSpecification(typeParams, ctors)) =>
-            val newBindings = typeParams.toList.zip(typeArgs.toList).toMap
-            val missedName = helper(
-              fqn.packagePath != name.packagePath || fqn.modulePath != name.modulePath,
-              new OtherTypeError(s"Constructor $fqn does not match type name $name")
-            )
-            val fromCtor = ctors.toMap.get(fqn.localName) match {
-              case Some(ctorArgs) =>
-                checkList(
-                  args.toList,
-                  ctorArgs.toList.map(_._2).map(Utils.applyBindings(_, newBindings)),
-                  context.withPrefix(s"Comparing $fqn constructor value to looked up type ${Succinct.Type(tpe)}")
+    val fromChildren = List[TypeError]()
+    uncurryFunctionType(tpe, context) match {
+      // if there are uncurrying errors, do not proceed to typecheck the constructor, just return the uncurrying errors
+      case Left(error) => List[TypeError](error)
+      // otherwise run the constructor and return the errors from that
+      case Right((ret, args)) =>
+        ret match {
+          case NonNativeRef(name, typeArgs) => dists.lookupTypeSpecification(name) match {
+              case Right(T.Specification.CustomTypeSpecification(typeParams, ctors)) =>
+                val newBindings = typeParams.toList.zip(typeArgs.toList).toMap
+                val missedName = helper(
+                  fqn.packagePath != name.packagePath || fqn.modulePath != name.modulePath,
+                  new OtherTypeError(s"Constructor $fqn does not match type name $name")
                 )
-              case None =>
-                List(new OtherTypeError(s"Constructor type $name exists, but does not have arm for ${fqn.localName}"))
+                val fromCtor = ctors.toMap.get(fqn.localName) match {
+                  case Some(ctorArgs) =>
+                    checkList(
+                      args.toList,
+                      ctorArgs.toList.map(_._2).map(Utils.applyBindings(_, newBindings)),
+                      context.withPrefix(s"Comparing $fqn constructor value to looked up type ${PrintIR(tpe)}")
+                    )
+                  case None =>
+                    List(
+                      new OtherTypeError(
+                        s"Constructor type $name exists, but does not have arm for ${fqn.localName.toCamelCase}"
+                      )
+                    )
+                }
+                missedName ++ fromCtor
+              case Right(other) =>
+                List(new ImproperTypeSpec(name, other, s"Type union expected"))
+              case Left(err) => List(err.withContext(s"Needed looking for constructor ${fqn.toStringTitleCase}"))
             }
-            missedName ++ fromCtor
-          case Right(other) =>
-            List(new ImproperTypeSpec(name, other, s"Type union expected"))
-          case Left(err) => List(new TypeMissing(name, err))
+          case NativeRef(_, _) => List() // TODO: check native constructor calls
+          case other           => List(new ImproperType(other, s"Reference to type union expected"))
         }
-      case NativeRef(_, _) => List() // TODO: check native constructor calls
-      case other           => List(new ImproperType(other, s"Reference to type union expected"))
     }
-    fromChildren ++ fromTpe
   }
   def handleFieldValue(tpe: UType, recordValue: TypedValue, name: Name, context: Context): TypeCheckerResult = {
     val fromChildren = check(recordValue, context)
-    val fromTpe = recordValue.attributes match {
-      case Type.Record(_, fields) =>
+    val fromTpe = dealias(recordValue.attributes, context) match {
+      case Right(rTpe @ Type.Record(_, fields)) =>
         fields.map(field => field.name -> field.data).toMap.get(name) match {
-          case None           => List(new TypeLacksField(tpe, name, "Referenced by field none"))
+          case None           => List(new TypeLacksField(rTpe, name, "Referenced by field node"))
           case Some(fieldTpe) => conformsTo(fieldTpe, tpe, context)
         }
-      case other => List(new ImproperType(other, s"Reference type expected"))
+      case Right(other) => List(new ImproperType(other, s"Record type expected"))
+      case Left(err)    => List(err)
     }
     fromChildren ++ fromTpe
   }
@@ -393,9 +447,11 @@ final class TypeChecker(dists: Distributions) {
         val tpeFieldSet: Set[Name] = tpeFields.map(_.name).toSet
         val valFieldSet: Set[Name] = valFields.map(_._1).toSet
         val missingFromTpe = tpeFieldSet
-          .diff(valFieldSet).toList.map(missing => ValueLacksField(value, recordTpe, missing))
+          .diff(valFieldSet)
+          .toList.map(missing => ValueLacksField(value, recordTpe, missing))
         val missingFromValue = valFieldSet
-          .diff(tpeFieldSet).toList.map(bonus => ValueHasExtraField(value, recordTpe, bonus))
+          .diff(tpeFieldSet)
+          .toList.map(bonus => ValueHasExtraField(value, recordTpe, bonus))
         val valFieldMap: Map[Name, TypedValue] = valFields.toMap
         val tpeFieldMap: Map[Name, UType]      = tpeFields.map(field => field.name -> field.data).toMap
         val conflicts = tpeFieldSet.intersect(valFieldSet).flatMap(name =>
@@ -408,12 +464,16 @@ final class TypeChecker(dists: Distributions) {
   }
   def handleReference(tpe: UType, fqn: FQName, context: Context): TypeCheckerResult = {
     val fromChildren = List()
-    val fromType = if (!Utils.isNative(fqn)) {
-      dists.lookupValueSpecification(fqn) match {
-        case Left(err) => List(new DefinitionMissing(err))
-        case Right(spec) =>
+    val fromType: List[TypeError] = if (!Utils.isNative(fqn)) {
+      dists.lookupValueDefinition(fqn) match {
+        case Left(err) => List(err.withContext(
+            "Needed looking for non-native IR reference. (Usually this inidcates a user-defined function)"
+          ))
+        case Right(definition) =>
+          val spec    = definition.toSpecification
           val curried = Utils.curryTypeFunction(spec.output, spec.inputs)
           conformsTo(curried, tpe, context)
+
       }
     } else List() // TODO: Handle native type references
     fromChildren ++ fromType

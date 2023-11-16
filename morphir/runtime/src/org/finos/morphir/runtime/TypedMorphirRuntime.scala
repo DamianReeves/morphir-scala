@@ -3,7 +3,7 @@ package org.finos.morphir.runtime
 import org.finos.morphir.naming._
 import org.finos.morphir.ir.Type.UType
 import org.finos.morphir.ir.Value.Value
-import org.finos.morphir.ir.Value as V
+import org.finos.morphir.ir.{Value => V}
 import org.finos.morphir.datamodel.Data
 import Utils.*
 import org.finos.morphir.ir.distribution.Distribution
@@ -14,8 +14,8 @@ import org.finos.morphir.runtime.environment.MorphirEnv
 import org.finos.morphir.runtime.exports.*
 
 trait TypedMorphirRuntime extends MorphirRuntime {
-  type TypeAttribs  = TypedMorphirRuntime.TypeAttribs
-  type ValueAttribs = TypedMorphirRuntime.ValueAttribs
+  type TypeAttribs  = TypedMorphirRuntimeDefs.TypeAttribs
+  type ValueAttribs = TypedMorphirRuntimeDefs.ValueAttribs
 
   final def evaluate(
       entryPoint: Value[scala.Unit, UType],
@@ -44,11 +44,4 @@ trait TypedMorphirRuntime extends MorphirRuntime {
     val inputIRs = params.map(toValue(_))
     evaluate(entryPoint, inputIR, inputIRs: _*)
   }
-}
-
-object TypedMorphirRuntime {
-  final type TypeAttribs  = scala.Unit
-  final type ValueAttribs = UType
-  type RuntimeValue       = Value[TypeAttribs, ValueAttribs]
-  type RuntimeDefinition  = Value.Definition[TypeAttribs, ValueAttribs]
 }

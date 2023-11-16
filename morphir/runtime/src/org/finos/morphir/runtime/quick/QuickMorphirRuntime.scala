@@ -3,10 +3,9 @@ package org.finos.morphir.runtime.quick
 import org.finos.morphir.naming.*
 import org.finos.morphir.ir.Type.UType
 import org.finos.morphir.ir.Value.{Value, Pattern, TypedValue}
-import org.finos.morphir.ir.Value as V
+import org.finos.morphir.ir.{Value => V}
 import org.finos.morphir.datamodel.Data
 import org.finos.morphir.ir.distribution.Distribution
-import org.finos.morphir.ir.distribution.Distribution.Library
 import org.finos.morphir.ir.Type.Type
 import org.finos.morphir.runtime.*
 import org.finos.morphir.runtime.exports.*
@@ -17,9 +16,11 @@ import org.finos.morphir.datamodel.Util.*
 import org.finos.morphir.datamodel.*
 
 import scala.util.{Failure, Success, Try}
-import org.finos.morphir.runtime.{EvaluationError, MorphirRuntimeError}
+import org.finos.morphir.runtime.MorphirRuntimeError
+import org.finos.morphir.runtime.MorphirRuntimeError.*
 import org.finos.morphir.runtime.environment.MorphirEnv
 import zio.prelude.fx.ZPure
+import org.finos.morphir.ir.printing.{DetailLevel, PrintIR}
 
 private[runtime] case class QuickMorphirRuntime(dists: Distributions, globals: GlobalDefs)
     extends TypedMorphirRuntime {
@@ -50,7 +51,7 @@ private[runtime] case class QuickMorphirRuntime(dists: Distributions, globals: G
     val maybeSpec = dists.lookupValueSpecification(fqn)
     maybeSpec match {
       case Right(spec) => RTAction.succeed(specificationToType(spec))
-      case Left(err)   => RTAction.fail(new SpecificationNotFound(s"Lookup failure: ${err.getMsg}"))
+      case Left(err)   => RTAction.fail(err.withContext("Cannot find Entry Point:"))
     }
   }
 
@@ -82,7 +83,7 @@ private[runtime] case class QuickMorphirRuntime(dists: Distributions, globals: G
               tpe <- findTypeBindings(tpe, params.toList, dists, Map())(ctx.options)
             } yield V.applyInferType(tpe, V.reference(fqn), params: _*)
           case other => RTAction.fail(
-              new TypeError.OtherTypeError(s"Entry point must be a Reference, instead found ${Succinct.Value(other)}")
+              new TypeError.OtherTypeError(s"Entry point must be a Reference, instead found ${PrintIR(other)}")
             )
         }
       }

@@ -2,12 +2,11 @@ package org.finos.morphir.runtime
 
 import org.finos.morphir.naming._
 import org.finos.morphir.ir.Value.TypedValue
-import org.finos.morphir.ir.Value as V
+import org.finos.morphir.ir.{Value => V}
 import V.*
 import V.Value.{List as ListValue, Unit as UnitValue, *}
-import org.finos.morphir.ir.Type as T
+import org.finos.morphir.ir.{Type => T}
 import org.finos.morphir.ir.{Module, Type}
-import org.finos.morphir.ir.distribution.Distribution.Library
 import org.finos.morphir.ir.distribution.Distribution
 import org.finos.morphir.ir.MorphirIRFile
 import org.finos.morphir.runtime.MorphirRuntime
@@ -16,6 +15,7 @@ import zio.json.*
 import zio.*
 import org.finos.morphir.ir.json.MorphirJsonSupport.*
 import org.finos.morphir.runtime.quick.{EvaluatorQuick, Store}
+import org.finos.morphir.runtime.MorphirRuntimeError.*
 
 trait EvaluationLibraryPlatformSpecific {
   def apply(fileName: String, prefix: Option[String] = None): EvaluationLibrary = {
@@ -27,8 +27,6 @@ trait EvaluationLibraryPlatformSpecific {
     val distribution = morphirIRFile
       .getOrElse(throw new Exception(morphirIRFile.toString))
       .distribution
-//      .asInstanceOf[Library]
-//    val store = Store.fromLibrary(library)
     EvaluationLibrary(MorphirRuntime.quick(distribution), prefix)
   }
 
@@ -58,5 +56,4 @@ trait EvaluationLibraryPlatformSpecific {
       value <- ZIO.fromEither(fileContents.fromJson[TypedValue])
         .mapError(MorphirIRDecodingError(_))
     } yield value
-
 }

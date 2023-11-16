@@ -1,21 +1,21 @@
 package org.finos.morphir.runtime
 
 import org.finos.morphir.naming._
-import org.finos.morphir.ir.{Type as T, Value as V}
+import org.finos.morphir.ir.{Type => T, Value => V}
 import org.finos.morphir.ir.Value.{Value, Pattern, TypedValue, USpecification => UValueSpec}
-import org.finos.morphir.ir.Type.{Type, UType, USpecification => UTypeSpec}
+import org.finos.morphir.ir.Type.{Field, Type, UType, USpecification => UTypeSpec}
 import org.finos.morphir.ir.sdk
 import org.finos.morphir.ir.sdk.Basics
-import org.finos.morphir.ir.Field
 import org.finos.morphir.runtime.exports.*
 import org.finos.morphir.ir.Module.{Specification => ModSpec}
 import zio.Chunk
 import org.finos.morphir.ir.sdk.Basics
-import org.finos.morphir.ir.distribution.Distribution
-import org.finos.morphir.ir.distribution.Distribution.Library
 import org.finos.morphir.ir.sdk
 import org.finos.morphir.ir.Value.{USpecification => UValueSpec, Definition => ValueDefinition}
 import org.finos.morphir.ir.Type.{USpecification => UTypeSpec}
+
+import org.finos.morphir.ir.printing.{DetailLevel, PrintIR}
+import org.finos.morphir.runtime.MorphirRuntimeError.*
 import TypeError.*
 
 object Utils {
@@ -52,7 +52,7 @@ object Utils {
         case EnableTyper.Enabled =>
           Left(error)
         case EnableTyper.Warn =>
-          println(s"[WARNING] ${error.getMsg}")
+          println(s"[WARNING] ${error.message}")
           Right(found)
         case EnableTyper.Disabled =>
           Right(found)
@@ -60,7 +60,9 @@ object Utils {
     (arg, param) match {
       case (argType, Type.Variable(_, name)) =>
         if (found.contains(name) && found(name) != argType) {
-          failIfChecked(InferenceConflict(s"Both ${found(name)} and $argType bound to type variable $name"))
+          failIfChecked(
+            InferenceConflict(found(name), argType, name)
+          )
         } else {
           Right(found + (name -> argType))
         }
@@ -70,7 +72,7 @@ object Utils {
           failIfChecked(new SizeMismatch(
             argElements.length,
             paramElements.length,
-            s"Different tuple arity between arg $argElements and parameter $paramElements"
+            s"Different tuple arity between arg ${PrintIR(argElements)} and parameter ${PrintIR(paramElements)}"
           ))
         } else {
           argElements.zip(paramElements).foldLeft(Right(found): Either[TypeError, Map[Name, UType]]) {
@@ -95,7 +97,7 @@ object Utils {
           failIfChecked(new SizeMismatch(
             argFields.length,
             paramFields.length,
-            s"Record lengths differ between arg : $argFields and param: $paramFields"
+            s"Record lengths differ between arg : ${PrintIR(argFields)} and param: ${PrintIR(paramFields)}"
           ))
         } else {
           argFields.zip(paramFields).foldLeft(Right(found): Either[TypeError, Map[Name, UType]]) {
@@ -108,8 +110,8 @@ object Utils {
           argBindings   <- typeCheckArg(argArg, paramArg, found)
           paramBindings <- typeCheckArg(argReturn, paramReturn, argBindings)
         } yield paramBindings
-      case (Type.ExtensibleRecord(_, _, _), Type.ExtensibleRecord(_, _, _)) =>
-        failIfChecked(new UnimplementedType(s"Extensible record type not supported (yet)"))
+      case (first @ Type.ExtensibleRecord(_, _, _), Type.ExtensibleRecord(_, _, _)) =>
+        failIfChecked(new TypeError.UnsupportedType(first, hint = s"Extensible record type not supported (yet)"))
       case (Type.Reference(_, argTypeName, argTypeArgs), Type.Reference(_, paramTypeName, paramTypeArgs))
           if (argTypeName == paramTypeName) =>
         argTypeArgs.zip(paramTypeArgs).foldLeft(Right(found): Either[TypeError, Map[Name, UType]]) {
@@ -117,7 +119,7 @@ object Utils {
             acc.flatMap(found => typeCheckArg(argTpe, paramTpe, found))
         }
       case (otherArg, otherParam) =>
-        failIfChecked(TypesMismatch(otherArg, otherParam, "Could not match arg to param on entry point"))
+        failIfChecked(UnknownTypeMismatch(otherArg, otherParam, "Could not match arg to param on entry point"))
     }
   }
 
@@ -141,7 +143,7 @@ object Utils {
       case (dealiaser(inner), args) =>
         findTypeBindings(inner, args, dists, knownBindings)
       case (nonFunction, head :: _) =>
-        RTAction.fail(new ImproperType(nonFunction, s"Tried to apply argument ${Succinct.Value(head)} to non-function"))
+        RTAction.fail(new ImproperType(nonFunction, s"Tried to apply argument ${PrintIR(head)} to non-function"))
     }
   }
   def isNative(fqn: FQName): Boolean = {
@@ -149,13 +151,6 @@ object Utils {
     fqn.getPackagePath == example.getPackagePath
   }
 
-  def uncurryFunctionType(functionTpe: UType): (UType, Chunk[UType]) =
-    functionTpe match {
-      case Type.Function(_, innerFunction, arg) =>
-        val (ret, args) = uncurryFunctionType(innerFunction)
-        (ret, args :+ arg)
-      case other => (other, Chunk())
-    }
   def curryTypeFunction(inner: UType, params: Chunk[(Name, UType)]): UType =
     params match {
       case Chunk() => inner

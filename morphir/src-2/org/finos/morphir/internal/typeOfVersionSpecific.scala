@@ -3,8 +3,10 @@ import magnolia1._
 import org.finos.morphir.annotation._
 import org.finos.morphir.naming._
 import org.finos.morphir.util.attribs.Attributes
+import org.finos.morphir.universe.ir.{FieldT, Type}
+
 trait TypeOfModuleVersionSpecific {
-  self: TypeModule with TypeSpecModule with TypeDefModule with TypeOfModule with TypeInfoModule =>
+  self: TypeSpecModule with TypeDefModule with TypeOfModule with TypeInfoModule =>
 
   import TypeDefinition._
   import TypeSpecification._
@@ -16,7 +18,7 @@ trait TypeOfModuleVersionSpecific {
       val fields = ctx.parameters.map { param =>
         val name                  = Name.fromString(param.label)
         val tpe: Type[Attributes] = param.typeclass.typeInfo.tpe
-        Field(name, tpe)
+        FieldT(name, tpe)
       }.toList
       val annotations = ctx.annotations ++ ctx.inheritedAnnotations ++ ctx.typeAnnotations
       val fqName: Option[FQName] = annotations.collectFirst {
@@ -54,7 +56,7 @@ trait TypeOfModuleVersionSpecific {
     }
 
     def split[T](sealedTrait: SealedTrait[TypeOf, T]): TypeOf[T] = new TypeOf[T] {
-      def apply() =
+      def apply(): TypeInfo =
         // TODO: Get this working
         GenericTypeInfo.TypeOnly(Type.Unit(Attributes.empty), None)
     }

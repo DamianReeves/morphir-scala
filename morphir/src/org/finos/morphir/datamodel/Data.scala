@@ -46,21 +46,25 @@ object Data {
   def Int(value: Int) = Int32(value)
 
   sealed trait Basic[+A]                   extends Data
-  case class Boolean(value: scala.Boolean) extends Basic[scala.Boolean] { val shape = Concept.Boolean }
-  case class Byte(value: scala.Byte)       extends Basic[Byte]          { val shape = Concept.Byte    }
+  case class Boolean(value: scala.Boolean) extends Basic[scala.Boolean] { val shape: Concept = Concept.Boolean }
+  case class Byte(value: scala.Byte)       extends Basic[Byte]          { val shape: Concept = Concept.Byte    }
   // A Morphir/ELM float is a Double
-  case class Float(value: scala.Double)            extends Basic[scala.Double]        { val shape = Concept.Float     }
-  case class Decimal(value: scala.BigDecimal)      extends Basic[scala.BigDecimal]    { val shape = Concept.Decimal   }
-  case class Integer(value: scala.BigInt)          extends Basic[scala.BigInt]        { val shape = Concept.Integer   }
-  case class Int16(value: scala.Short)             extends Basic[Short]               { val shape = Concept.Int16     }
-  case class Int32(value: scala.Int)               extends Basic[Int]                 { val shape = Concept.Int32     }
-  case class Int64(value: scala.Long)              extends Basic[Long]                { val shape = Concept.Int64     }
-  case class String(value: java.lang.String)       extends Basic[java.lang.String]    { val shape = Concept.String    }
-  case class LocalDate(value: java.time.LocalDate) extends Basic[java.time.LocalDate] { val shape = Concept.LocalDate }
-  case class Month(value: java.time.Month)         extends Basic[java.time.Month]     { val shape = Concept.Month     }
-  case class LocalTime(value: java.time.LocalTime) extends Basic[java.time.LocalTime] { val shape = Concept.LocalTime }
-  case class Char(value: scala.Char)               extends Basic[scala.Char]          { val shape = Concept.Char      }
-  case object Unit                                 extends Basic[scala.Unit]          { val shape = Concept.Unit      }
+  case class Float(value: scala.Double)       extends Basic[scala.Double]     { val shape: Concept = Concept.Float   }
+  case class Decimal(value: scala.BigDecimal) extends Basic[scala.BigDecimal] { val shape: Concept = Concept.Decimal }
+  case class Integer(value: scala.BigInt)     extends Basic[scala.BigInt]     { val shape: Concept = Concept.Integer }
+  case class Int16(value: scala.Short)        extends Basic[Short]            { val shape: Concept = Concept.Int16   }
+  case class Int32(value: scala.Int)          extends Basic[Int]              { val shape: Concept = Concept.Int32   }
+  case class Int64(value: scala.Long)         extends Basic[Long]             { val shape: Concept = Concept.Int64   }
+  case class String(value: java.lang.String)  extends Basic[java.lang.String] { val shape: Concept = Concept.String  }
+  case class LocalDate(value: java.time.LocalDate) extends Basic[java.time.LocalDate] {
+    val shape: Concept = Concept.LocalDate
+  }
+  case class Month(value: java.time.Month) extends Basic[java.time.Month] { val shape: Concept = Concept.Month }
+  case class LocalTime(value: java.time.LocalTime) extends Basic[java.time.LocalTime] {
+    val shape: Concept = Concept.LocalTime
+  }
+  case class Char(value: scala.Char) extends Basic[scala.Char] { val shape: Concept = Concept.Char }
+  case object Unit                   extends Basic[scala.Unit] { val shape: Concept = Concept.Unit }
 
   // Needed for Scala 3 extension methods to work
   object Boolean   {}
@@ -140,8 +144,15 @@ object Data {
   }
   sealed trait Result extends Data
   object Result {
-    case class Ok(data: Data, shape: Concept.Result)  extends Result
+    case class Ok(data: Data, shape: Concept.Result) extends Result
+    object Ok {
+      def withErrConcept(data: Data, errConcept: Concept) = Ok(data, Concept.Result(errConcept, data.shape))
+    }
     case class Err(data: Data, shape: Concept.Result) extends Result
+
+    object Err {
+      def withOkConcept(data: Data, okConcept: Concept) = Err(data, Concept.Result(data.shape, okConcept))
+    }
   }
 
   case class List private[datamodel] (values: scala.List[Data], shape: Concept.List) extends Data
