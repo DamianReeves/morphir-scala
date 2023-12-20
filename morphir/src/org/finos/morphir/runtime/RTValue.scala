@@ -15,6 +15,7 @@ import org.finos.morphir.runtime.internal.CallStackFrame
 
 import scala.collection.mutable
 import scala.collection.mutable.LinkedHashMap
+import java.time.DayOfWeek
 
 // TODO Integrate errors into reporting format
 // Represents a Morphir-Evaluator result. Typed on TypedMorphirRuntimeDefs.TypeAttribs, TypedMorphirRuntimeDefs.ValueAttribs
@@ -322,9 +323,12 @@ object RTValue {
         }
     }
 
-    case class Boolean(value: scala.Boolean)   extends Primitive[scala.Boolean]
-    case class String(value: java.lang.String) extends Primitive[java.lang.String]
-    case class Char(value: scala.Char)         extends Primitive[scala.Char]
+    case class Boolean(value: scala.Boolean) extends Primitive[scala.Boolean]
+
+    case class DayOfWeek(value: java.time.DayOfWeek) extends Primitive[java.time.DayOfWeek]
+    case class Month(value: java.time.Month)         extends Primitive[java.time.Month]
+    case class String(value: java.lang.String)       extends Primitive[java.lang.String]
+    case class Char(value: scala.Char)               extends Primitive[scala.Char]
 
     def unapply(prim: Primitive[_]): Option[Any] =
       Some(prim.value)
@@ -344,16 +348,18 @@ object RTValue {
     //       and return expected types as opposed to input types.
     def make[T](value: T): Option[Primitive[T]] =
       value match {
-        case v: MInt             => Some(Primitive.Int(v).asInstanceOf[Primitive[T]])
-        case v: scala.Int        => Some(Primitive.Int(MInt.fromInt(v)).asInstanceOf[Primitive[T]])
-        case v: scala.Long       => Some(Primitive.Int(MInt.fromLong(v)).asInstanceOf[Primitive[T]])
-        case v: java.lang.String => Some(Primitive.String(v).asInstanceOf[Primitive[T]])
-        case v: scala.Boolean    => Some(Primitive.Boolean(v).asInstanceOf[Primitive[T]])
-        case v: scala.Char       => Some(Primitive.Char(v).asInstanceOf[Primitive[T]])
-        case v: scala.BigDecimal => Some(Primitive.BigDecimal(v).asInstanceOf[Primitive[T]])
-        case v: scala.Float      => Some(Primitive.Float(v.toDouble).asInstanceOf[Primitive[T]])
-        case v: scala.Double     => Some(Primitive.Float(v).asInstanceOf[Primitive[T]])
-        case _                   => None
+        case v: MInt                => Some(Primitive.Int(v).asInstanceOf[Primitive[T]])
+        case v: scala.Int           => Some(Primitive.Int(MInt.fromInt(v)).asInstanceOf[Primitive[T]])
+        case v: scala.Long          => Some(Primitive.Int(MInt.fromLong(v)).asInstanceOf[Primitive[T]])
+        case v: java.lang.String    => Some(Primitive.String(v).asInstanceOf[Primitive[T]])
+        case v: scala.Boolean       => Some(Primitive.Boolean(v).asInstanceOf[Primitive[T]])
+        case v: scala.Char          => Some(Primitive.Char(v).asInstanceOf[Primitive[T]])
+        case v: scala.BigDecimal    => Some(Primitive.BigDecimal(v).asInstanceOf[Primitive[T]])
+        case v: scala.Float         => Some(Primitive.Float(v.toDouble).asInstanceOf[Primitive[T]])
+        case v: scala.Double        => Some(Primitive.Float(v).asInstanceOf[Primitive[T]])
+        case v: java.time.DayOfWeek => Some(Primitive.DayOfWeek(v).asInstanceOf[Primitive[T]])
+        case v: java.time.Month     => Some(Primitive.Month(v).asInstanceOf[Primitive[T]])
+        case _                      => None
       }
   }
 
