@@ -8,9 +8,18 @@
     "morphir-elm/sdks/morphir-unit-test"
   ],
   "dependencies": {},
-  "scripts": {},
+  "scripts": {
+    "build": "moon morphir:build",
+    "_postinstall": "elm-tooling install"
+  },
   "resolutions": {},
   "devDependencies": {
+    "@moonrepo/cli": "^1.25.0",
     "morphir-elm": "^2.89.0"
-  }
+  },
+  "trustedDependencies": [
+    "@moonrepo/cli",
+    "elm-tooling",
+    "morphir-elm"
+  ]
 }
