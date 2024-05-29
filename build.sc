@@ -264,6 +264,25 @@ trait MorphirModule extends Cross.Module[String] with CrossPlatform { morphir =>
     }
   }
 
+  object engine extends CrossPlatform with CrossValue {
+    trait Shared extends MorphirCommonCrossModule with MorphirPublishModule with BuildInfo {
+
+      def buildInfoPackageName = "org.finos.morphir.extensibility"
+
+      def buildInfoMembers = Seq(
+        BuildInfo.Value("version", publishVersion()),
+        BuildInfo.Value("scalaVersion", scalaVersion()),
+        BuildInfo.Value("platform", platform.toString)
+      )
+
+      def ivyDeps = Agg(
+        Deps.io.github.dokar3.`quickjs-kt-jvm`
+      )
+    }
+
+    object jvm extends Shared with MorphirJVMModule
+  }
+
   object extensibility extends CrossPlatform with CrossValue {
 
     trait Shared extends MorphirCommonCrossModule with MorphirPublishModule with BuildInfo {
@@ -355,7 +374,9 @@ trait MorphirModule extends Cross.Module[String] with CrossPlatform { morphir =>
           Deps.com.lihaoyi.`os-lib`,
           Deps.com.lihaoyi.sourcecode,
           Deps.dev.zio.`zio-test`,
-          Deps.dev.zio.`zio-test-sbt`
+          Deps.dev.zio.`zio-test-sbt`,
+          Deps.io.getkyo.`kyo-core`,
+          Deps.io.getkyo.`kyo-direct`
         )
         def moduleDeps = super.moduleDeps ++ Agg(testing.zio.jvm)
       }
@@ -363,7 +384,12 @@ trait MorphirModule extends Cross.Module[String] with CrossPlatform { morphir =>
 
     object js extends Shared with MorphirJSModule {
       object test extends ScalaJSTests with TestModule.ZioTest {
-        def ivyDeps    = Agg(Deps.dev.zio.`zio-test`, Deps.dev.zio.`zio-test-sbt`)
+        def ivyDeps = Agg(
+          Deps.dev.zio.`zio-test`,
+          Deps.dev.zio.`zio-test-sbt`,
+          Deps.io.getkyo.`kyo-core`,
+          Deps.io.getkyo.`kyo-direct`
+        )
         def moduleDeps = super.moduleDeps ++ Agg(testing.zio.js)
         def moduleKind = ModuleKind.CommonJSModule
       }

@@ -140,10 +140,19 @@ object Deps {
     case object `get-coursier` {
       val coursier = ivy"io.get-coursier::coursier::${Versions.coursier}"
     }
+    case object getkyo {
+      val `kyo-core`   = ivy"io.getkyo::kyo-core::${Versions.kyo}"
+      val `kyo-direct` = ivy"io.getkyo::kyo-direct::${Versions.kyo}"
+      val `kyo-sttp`   = ivy"io.getkyo::kyo-sttp::${Versions.kyo}"
+    }
     case object github {
       case object cquiroz {
         val `scala-java-time`      = ivy"io.github.cquiroz::scala-java-time::${Versions.`scala-java-time`}"
         val `scala-java-time-tzdb` = ivy"io.github.cquiroz::scala-java-time-tzdb::${Versions.`scala-java-time`}"
+      }
+
+      case object dokar3 {
+        val `quickjs-kt-jvm` = ivy"io.github.dokar3:quickjs-kt-jvm:${Versions.`quickjs-kt`}"
       }
     }
     case object lemonlabs {
@@ -208,10 +217,12 @@ object Versions {
   val fs2                        = "3.10.2"
   val geny                       = "1.0.0"
   val `izumi-reflect`            = "2.3.8"
+  val kyo                        = "0.10.2"
   val metaconfig                 = "0.11.1"
   val mainargs                   = "0.5.0"
   val `os-lib`                   = "0.10.1"
   val paiges                     = "0.4.3"
+  val `quickjs-kt`               = "1.0.0-alpha10"
   val `scala-java-time`          = "2.5.0"
   val `scala-native-crypto`      = "0.0.4"
   val `scalac-compat-annotation` = "0.1.4"
