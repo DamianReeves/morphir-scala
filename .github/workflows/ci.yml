@@ -108,13 +108,13 @@ jobs:
 
       - name: Install tooling
         run: |
-          ./build.sh install
+          yarn install
       - name: Make Morphir IR
         run: |
-          ./build.sh run :morphir-elm-build
+          moon run :morphir-elm-build
       - name: Run JVM tests
         run: |
-          ./build.sh --scala-version ${{matrix.scala}} test-jvm
+          moon run :scala-test-jvm
 
       - name: Cache JVM build output
         # when in master repo: all commits to main branch and all additional tags
