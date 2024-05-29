@@ -22,3 +22,11 @@ tasks:
         optional: true
       - target: "~:scala-lint"
         optional: true
+  test:
+    inputs: []
+    deps:
+      - target: "~:scala-jvm"
+        optional: true
+      - target: "~:elm-test"
+        optional: true
+

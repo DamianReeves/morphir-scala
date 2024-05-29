@@ -18,12 +18,32 @@ tasks:
     inputs:
       - "@files(scalaSources)"
       - "@files(scalaBuildSources)"
-  multi: 
+  scala-test-jvm:
     command: |
-      echo "1";
-      echo "2";
-      echo "3"
-
-
+      ./mill morphir.__.jvm.__.test
+    inputs:
+      - "@files(scalaSources)"
+      - "@files(scalaBuildSources)"
+  scala-test-js:
+    command: |
+      ./mill morphir.__.js.__.test
+    inputs:
+      - "@files(scalaSources)"
+      - "@files(scalaBuildSources)"
+  scala-test-native:
+    command: |
+      ./mill morphir.__.native.__.test
+    inputs:
+      - "@files(scalaSources)"
+      - "@files(scalaBuildSources)"
+  scala-test:
+    inputs: []
+    deps:
+      - target: "~:scala-test-jvm"
+        optional: true
+      - target: "~:scala-test-js"
+        optional: true
+      - target: "~:scala-test-native"
+        optional: true
 tags:
   - "scala"

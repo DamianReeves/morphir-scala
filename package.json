@@ -9,8 +9,9 @@
   ],
   "scripts": {
     "build": "moon :build",
+    "morphir-build": "moon :morphir-elm-build",
     "clean": "moon :morpir-elm-clean",
-    "format": "moon :fmt"
+    "format": "moon :fmt && ./mill"
   },
   "devDependencies": {
     "@moonrepo/cli": "1.24.6",
