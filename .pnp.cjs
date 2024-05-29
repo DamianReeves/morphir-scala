@@ -62,6 +62,7 @@ const RAW_RUNTIME_STATE =
       [null, {\
         "packageLocation": "./",\
         "packageDependencies": [\
+          ["@moonrepo/cli", "npm:1.24.6"],\
           ["elm", "npm:0.19.1-6"],\
           ["elm-format", "npm:0.8.7"],\
           ["elm-json", "npm:0.2.13"],\
@@ -202,6 +203,86 @@ const RAW_RUNTIME_STATE =
         "packageLocation": "./.yarn/unplugged/@mattpiz-elm-test-rs-win32-x64-npm-3.0.0-0-8a1ab6c06e/node_modules/@mattpiz/elm-test-rs-win32-x64/",\
         "packageDependencies": [\
           ["@mattpiz/elm-test-rs-win32-x64", "npm:3.0.0-0"]\
+        ],\
+        "linkType": "HARD"\
+      }]\
+    ]],\
+    ["@moonrepo/cli", [\
+      ["npm:1.24.6", {\
+        "packageLocation": "./.yarn/unplugged/@moonrepo-cli-npm-1.24.6-a3fb067bee/node_modules/@moonrepo/cli/",\
+        "packageDependencies": [\
+          ["@moonrepo/cli", "npm:1.24.6"],\
+          ["@moonrepo/core-linux-arm64-gnu", "npm:1.24.6"],\
+          ["@moonrepo/core-linux-arm64-musl", "npm:1.24.6"],\
+          ["@moonrepo/core-linux-x64-gnu", "npm:1.24.6"],\
+          ["@moonrepo/core-linux-x64-musl", "npm:1.24.6"],\
+          ["@moonrepo/core-macos-arm64", "npm:1.24.6"],\
+          ["@moonrepo/core-macos-x64", "npm:1.24.6"],\
+          ["@moonrepo/core-windows-x64-msvc", "npm:1.24.6"],\
+          ["detect-libc", "npm:2.0.3"]\
+        ],\
+        "linkType": "HARD"\
+      }]\
+    ]],\
+    ["@moonrepo/core-linux-arm64-gnu", [\
+      ["npm:1.24.6", {\
+        "packageLocation": "./.yarn/unplugged/@moonrepo-core-linux-arm64-gnu-npm-1.24.6-7b0ce77437/node_modules/@moonrepo/core-linux-arm64-gnu/",\
+        "packageDependencies": [\
+          ["@moonrepo/core-linux-arm64-gnu", "npm:1.24.6"]\
+        ],\
+        "linkType": "HARD"\
+      }]\
+    ]],\
+    ["@moonrepo/core-linux-arm64-musl", [\
+      ["npm:1.24.6", {\
+        "packageLocation": "./.yarn/unplugged/@moonrepo-core-linux-arm64-musl-npm-1.24.6-792252a6f8/node_modules/@moonrepo/core-linux-arm64-musl/",\
+        "packageDependencies": [\
+          ["@moonrepo/core-linux-arm64-musl", "npm:1.24.6"]\
+        ],\
+        "linkType": "HARD"\
+      }]\
+    ]],\
+    ["@moonrepo/core-linux-x64-gnu", [\
+      ["npm:1.24.6", {\
+        "packageLocation": "./.yarn/unplugged/@moonrepo-core-linux-x64-gnu-npm-1.24.6-26ae06c65f/node_modules/@moonrepo/core-linux-x64-gnu/",\
+        "packageDependencies": [\
+          ["@moonrepo/core-linux-x64-gnu", "npm:1.24.6"]\
+        ],\
+        "linkType": "HARD"\
+      }]\
+    ]],\
+    ["@moonrepo/core-linux-x64-musl", [\
+      ["npm:1.24.6", {\
+        "packageLocation": "./.yarn/unplugged/@moonrepo-core-linux-x64-musl-npm-1.24.6-288efd12f4/node_modules/@moonrepo/core-linux-x64-musl/",\
+        "packageDependencies": [\
+          ["@moonrepo/core-linux-x64-musl", "npm:1.24.6"]\
+        ],\
+        "linkType": "HARD"\
+      }]\
+    ]],\
+    ["@moonrepo/core-macos-arm64", [\
+      ["npm:1.24.6", {\
+        "packageLocation": "./.yarn/unplugged/@moonrepo-core-macos-arm64-npm-1.24.6-6135c3b935/node_modules/@moonrepo/core-macos-arm64/",\
+        "packageDependencies": [\
+          ["@moonrepo/core-macos-arm64", "npm:1.24.6"]\
+        ],\
+        "linkType": "HARD"\
+      }]\
+    ]],\
+    ["@moonrepo/core-macos-x64", [\
+      ["npm:1.24.6", {\
+        "packageLocation": "./.yarn/unplugged/@moonrepo-core-macos-x64-npm-1.24.6-b4a823030d/node_modules/@moonrepo/core-macos-x64/",\
+        "packageDependencies": [\
+          ["@moonrepo/core-macos-x64", "npm:1.24.6"]\
+        ],\
+        "linkType": "HARD"\
+      }]\
+    ]],\
+    ["@moonrepo/core-windows-x64-msvc", [\
+      ["npm:1.24.6", {\
+        "packageLocation": "./.yarn/unplugged/@moonrepo-core-windows-x64-msvc-npm-1.24.6-dc4dbe44f0/node_modules/@moonrepo/core-windows-x64-msvc/",\
+        "packageDependencies": [\
+          ["@moonrepo/core-windows-x64-msvc", "npm:1.24.6"]\
         ],\
         "linkType": "HARD"\
       }]\
@@ -823,6 +904,15 @@ const RAW_RUNTIME_STATE =
         "packageLocation": "../../../../../.yarn/berry/cache/destroy-npm-1.2.0-6a511802e2-10c0.zip/node_modules/destroy/",\
         "packageDependencies": [\
           ["destroy", "npm:1.2.0"]\
+        ],\
+        "linkType": "HARD"\
+      }]\
+    ]],\
+    ["detect-libc", [\
+      ["npm:2.0.3", {\
+        "packageLocation": "../../../../../.yarn/berry/cache/detect-libc-npm-2.0.3-2ddae34945-10c0.zip/node_modules/detect-libc/",\
+        "packageDependencies": [\
+          ["detect-libc", "npm:2.0.3"]\
         ],\
         "linkType": "HARD"\
       }]\
@@ -1656,6 +1746,7 @@ const RAW_RUNTIME_STATE =
         "packageLocation": "./",\
         "packageDependencies": [\
           ["morphir-scala", "workspace:."],\
+          ["@moonrepo/cli", "npm:1.24.6"],\
           ["elm", "npm:0.19.1-6"],\
           ["elm-format", "npm:0.8.7"],\
           ["elm-json", "npm:0.2.13"],\

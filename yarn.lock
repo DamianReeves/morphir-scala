@@ -110,6 +110,88 @@ __metadata:
   languageName: node
   linkType: hard
 
+"@moonrepo/cli@npm:1.24.6":
+  version: 1.24.6
+  resolution: "@moonrepo/cli@npm:1.24.6"
+  dependencies:
+    "@moonrepo/core-linux-arm64-gnu": "npm:1.24.6"
+    "@moonrepo/core-linux-arm64-musl": "npm:1.24.6"
+    "@moonrepo/core-linux-x64-gnu": "npm:1.24.6"
+    "@moonrepo/core-linux-x64-musl": "npm:1.24.6"
+    "@moonrepo/core-macos-arm64": "npm:1.24.6"
+    "@moonrepo/core-macos-x64": "npm:1.24.6"
+    "@moonrepo/core-windows-x64-msvc": "npm:1.24.6"
+    detect-libc: "npm:^2.0.3"
+  dependenciesMeta:
+    "@moonrepo/core-linux-arm64-gnu":
+      optional: true
+    "@moonrepo/core-linux-arm64-musl":
+      optional: true
+    "@moonrepo/core-linux-x64-gnu":
+      optional: true
+    "@moonrepo/core-linux-x64-musl":
+      optional: true
+    "@moonrepo/core-macos-arm64":
+      optional: true
+    "@moonrepo/core-macos-x64":
+      optional: true
+    "@moonrepo/core-windows-x64-msvc":
+      optional: true
+  bin:
+    moon: moon.js
+  checksum: 10c0/1505d0e704d895423e944509a7d87b310ddaf363b4c2eb3f2636e790e7b107bdb17beb88741ba1bf8a2725b24121db4db0afca2129dd7f690d34097da705b4fd
+  languageName: node
+  linkType: hard
+
+"@moonrepo/core-linux-arm64-gnu@npm:1.24.6":
+  version: 1.24.6
+  resolution: "@moonrepo/core-linux-arm64-gnu@npm:1.24.6"
+  conditions: os=linux & cpu=arm64 & libc=glibc
+  languageName: node
+  linkType: hard
+
+"@moonrepo/core-linux-arm64-musl@npm:1.24.6":
+  version: 1.24.6
+  resolution: "@moonrepo/core-linux-arm64-musl@npm:1.24.6"
+  conditions: os=linux & cpu=arm64 & libc=musl
+  languageName: node
+  linkType: hard
+
+"@moonrepo/core-linux-x64-gnu@npm:1.24.6":
+  version: 1.24.6
+  resolution: "@moonrepo/core-linux-x64-gnu@npm:1.24.6"
+  conditions: os=linux & cpu=x64 & libc=glibc
+  languageName: node
+  linkType: hard
+
+"@moonrepo/core-linux-x64-musl@npm:1.24.6":
+  version: 1.24.6
+  resolution: "@moonrepo/core-linux-x64-musl@npm:1.24.6"
+  conditions: os=linux & cpu=x64 & libc=musl
+  languageName: node
+  linkType: hard
+
+"@moonrepo/core-macos-arm64@npm:1.24.6":
+  version: 1.24.6
+  resolution: "@moonrepo/core-macos-arm64@npm:1.24.6"
+  conditions: os=darwin & cpu=arm64
+  languageName: node
+  linkType: hard
+
+"@moonrepo/core-macos-x64@npm:1.24.6":
+  version: 1.24.6
+  resolution: "@moonrepo/core-macos-x64@npm:1.24.6"
+  conditions: os=darwin & cpu=x64
+  languageName: node
+  linkType: hard
+
+"@moonrepo/core-windows-x64-msvc@npm:1.24.6":
+  version: 1.24.6
+  resolution: "@moonrepo/core-windows-x64-msvc@npm:1.24.6"
+  conditions: os=win32 & cpu=x64
+  languageName: node
+  linkType: hard
+
 "@morphir-elm/unit-test-framework@workspace:morphir-elm/sdks/morphir-unit-test":
   version: 0.0.0-use.local
   resolution: "@morphir-elm/unit-test-framework@workspace:morphir-elm/sdks/morphir-unit-test"
@@ -627,6 +709,13 @@ __metadata:
   version: 1.2.0
   resolution: "destroy@npm:1.2.0"
   checksum: 10c0/bd7633942f57418f5a3b80d5cb53898127bcf53e24cdf5d5f4396be471417671f0fee48a4ebe9a1e9defbde2a31280011af58a57e090ff822f589b443ed4e643
+  languageName: node
+  linkType: hard
+
+"detect-libc@npm:^2.0.3":
+  version: 2.0.3
+  resolution: "detect-libc@npm:2.0.3"
+  checksum: 10c0/88095bda8f90220c95f162bf92cad70bd0e424913e655c20578600e35b91edc261af27531cf160a331e185c0ced93944bc7e09939143225f56312d7fd800fdb7
   languageName: node
   linkType: hard
 
@@ -1408,6 +1497,7 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "morphir-scala@workspace:."
   dependencies:
+    "@moonrepo/cli": "npm:1.24.6"
     elm: "npm:^0.19.1-6"
     elm-format: "npm:^0.8.7"
     elm-json: "npm:^0.2.13"
