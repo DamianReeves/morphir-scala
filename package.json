@@ -7,19 +7,19 @@
     "examples/morphir-elm-projects/unit-test-framework/*",
     "morphir-elm/sdks/morphir-unit-test"
   ],
-  "dependencies": {},
   "scripts": {
-    "build": "moon morphir:build",
-    "_postinstall": "elm-tooling install"
+    "build": "moon morphir:build"
   },
-  "resolutions": {},
   "devDependencies": {
-    "@moonrepo/cli": "^1.25.0",
+    "elm": "^0.19.1-6",
+    "elm-format": "^0.8.7",
+    "elm-json": "^0.2.13",
+    "elm-test-rs": "^3.0.0-5",
     "morphir-elm": "^2.89.0"
   },
   "trustedDependencies": [
     "@moonrepo/cli",
-    "elm-tooling",
     "morphir-elm"
-  ]
+  ],
+  "packageManager": "yarn@4.2.2"
 }

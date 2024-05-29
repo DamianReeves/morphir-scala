@@ -4,12 +4,12 @@ fileGroups:
 tasks:
   elm-lint:
     command: |
-      elm-format @dirs(elmSources) @files(elmSources) --validate --yes
+      yarn exec elm-format @dirs(elmSources) @files(elmSources) --validate --yes
     inputs:
       - "@files(elmSources)"
 
   elm-format:
     command: |
-      elm-format @dirs(elmSources) @files(elmSources) --yes
+      yarn exec elm-format @dirs(elmSources) @files(elmSources) --yes
     inputs:
       - "@files(elmSources)"

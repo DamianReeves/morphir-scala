@@ -2,9 +2,6 @@ $schema: "https://moonrepo.dev/schemas/toolchain.json"
 
 # Configures Bun within the toolchain.
 bun:
-  # The version to use. Must be a semantic version that includes major, minor, and patch.
-  version: "1.0.35"
-
   # Version format to use when syncing dependencies within the project's `package.json`.
   # dependencyVersionFormat: 'workspace'
 
@@ -15,4 +12,4 @@ bun:
   syncProjectWorkspaceDependencies: true
 
 node:
-  packageManager: bun
+  packageManager: yarn
